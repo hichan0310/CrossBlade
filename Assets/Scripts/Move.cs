@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,14 +20,7 @@ namespace Scripts
         HitReaction
     }
 
-    [Serializable]
-    public class MoveTransition
-    {
-        public MoveEventType trigger = MoveEventType.NormalEnd;
-        public Move next;
-    }
-
-    public abstract class Move : ScriptableObject
+    public abstract class Move : MonoBehaviour
     {
         [Header("Identity")]
         public string moveId = "move";
@@ -36,24 +28,33 @@ namespace Scripts
 
         [Header("Timing")]
         [Min(0.01f)] public float duration = 0.30f;
-        public AnimationClip clip;
+
+        [Header("Visual")]
+        public Sprite frameSprite;
+
+        [Header("Motion")]
+        public bool useStepMovement;
+        public Vector2 stepOffset;
+        public bool useTeleport;
+        public Vector2 teleportOffset;
 
         [Header("Stance")]
         [Min(0f)] public float stanceCostScale = 1f;
-        public int stanceRecoveryOnFinish = 0;
+        public int stanceRecoveryOnFinish = 1;
 
         [Header("Combat")]
-        public int baseDamage = 1;
-        public int baseStanceDamage = 1;
+        public int baseDamage = 0;
+        public int baseStanceDamage = 0;
 
         [Header("Graph")]
-        public Move defaultNext;
-        public List<MoveTransition> transitions = new List<MoveTransition>();
+        public Move hitMove;
+        public Move guardMove;
+        public List<Move> after = new List<Move>();
+        public bool skipAdditionalInterruptFollowUp;
 
         public int GetStanceCost(int force)
         {
-            int clamped = ClampForce(force);
-            return Mathf.CeilToInt(clamped * stanceCostScale);
+            return Mathf.CeilToInt(force * stanceCostScale);
         }
 
         public virtual float GetTravelDistance(int force)
@@ -61,36 +62,50 @@ namespace Scripts
             return 0f;
         }
 
-        public Move GetNext(MoveEventType trigger)
+        public virtual int forceCarryIn
         {
-            for (int i = 0; i < transitions.Count; i++)
+            get
             {
-                if (transitions[i] != null && transitions[i].trigger == trigger)
-                {
-                    return transitions[i].next;
-                }
+                return 0;
             }
-
-            if (trigger == MoveEventType.NormalEnd)
-            {
-                return defaultNext;
-            }
-
-            return null;
         }
 
-        protected static int ClampForce(int force)
+        public virtual int forceCarryOut
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public Move GetNext(MoveEventType trigger)
+        {
+            switch (trigger)
+            {
+                case MoveEventType.Hit:
+                    return hitMove;
+                case MoveEventType.Guard:
+                    return guardMove;
+                case MoveEventType.Clash:
+                case MoveEventType.NormalEnd:
+                    return (after != null && after.Count > 0) ? after[0] : null;
+                default:
+                    return null;
+            }
+        }
+
+        protected static int ClampInputForce(int force)
         {
             return Mathf.Clamp(force, 1, 5);
         }
     }
 
-    [CreateAssetMenu(menuName = "CrossBlade/Move/Base Move", fileName = "Move_Base")]
+    [AddComponentMenu("CrossBlade/Move/Base Move")]
     public class BaseMove : Move
     {
     }
 
-    [CreateAssetMenu(menuName = "CrossBlade/Move/Attack Move", fileName = "Move_Attack")]
+    [AddComponentMenu("CrossBlade/Move/Attack Move")]
     public class AttackMove : Move
     {
         [Tooltip("Force 1~5 each slot. Missing slots reuse nearest valid value.")]
@@ -108,13 +123,13 @@ namespace Scripts
                 return 0f;
             }
 
-            int idx = ClampForce(force) - 1;
+            int idx = ClampInputForce(force) - 1;
             idx = Mathf.Clamp(idx, 0, values.Length - 1);
             return values[idx];
         }
     }
 
-    [CreateAssetMenu(menuName = "CrossBlade/Move/Dash Move", fileName = "Move_Dash")]
+    [AddComponentMenu("CrossBlade/Move/Dash Move")]
     public class DashMove : Move
     {
         [Tooltip("Force 1~5 each slot. Missing slots reuse nearest valid value.")]
@@ -132,7 +147,7 @@ namespace Scripts
                 return 0f;
             }
 
-            int idx = ClampForce(force) - 1;
+            int idx = ClampInputForce(force) - 1;
             idx = Mathf.Clamp(idx, 0, values.Length - 1);
             return values[idx];
         }
