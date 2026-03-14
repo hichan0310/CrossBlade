@@ -13,9 +13,18 @@ namespace Scripts
     }
 
     [Serializable]
-    public struct QueuedMove
+    public class QueuedMove
     {
+        private int carryIn = 0;
+        private int carryOut = 0;
         public Move move;
+        public int forceCarryOut => carryOut;
+        public int forceCarryIn { set { carryIn = value; } }
+
+        public void Play(int inputForce, CombatContext combatContext)
+        {
+            this.move.Play(combatContext, carryIn + inputForce, out carryOut);
+        }
     }
 
     public struct MoveRuntime
@@ -37,12 +46,12 @@ namespace Scripts
         {
             get
             {
-                if (move == null || move.duration <= 0f)
+                if (move == null || move.Duration <= 0f)
                 {
                     return 1f;
                 }
 
-                return Mathf.Clamp01(elapsed / move.duration);
+                return Mathf.Clamp01(elapsed / move.Duration);
             }
         }
 
@@ -55,7 +64,7 @@ namespace Scripts
                     return true;
                 }
 
-                return elapsed >= move.duration;
+                return elapsed >= move.Duration;
             }
         }
     }
@@ -63,63 +72,66 @@ namespace Scripts
     public class Actor : MonoBehaviour
     {
         [Header("Identity")]
-        public string actorId = "actor";
+        [SerializeField] private string actorId = "actor";
 
         [Header("Stats")]
-        public int maxHp = 100;
-        public int hp = 100;
-        public int maxStance = 100;
-        public int stance = 100;
-        public int maxSpecialForce = 20;
-        public int specialForce;
-        [Min(0f)] public float knockbackResistance = 0f;
+        [SerializeField] private int maxHp = 100;
+        [SerializeField] private int hp = 100;
+        [SerializeField] private int maxStance = 100;
+        [SerializeField] private int stance = 100;
+        [SerializeField] private int maxSpecialForce = 20;
+        [SerializeField] private int specialForce;
+        [SerializeField, Min(0f)] private float knockbackResistance = 0f;
 
         [Header("Chain")]
-        [Min(0f)] public float chainStepBonus = 0.05f;
-        [Min(1f)] public float chainMaxMultiplier = 1.5f;
+        [SerializeField, Min(0f)] private float chainStepBonus = 0.05f;
+        [SerializeField, Min(1f)] private float chainMaxMultiplier = 1.5f;
 
         [Header("References")]
-        public Rigidbody2D body;
-        public SpriteRenderer spriteRenderer;
-        public Collider2D weaponCollider;
-        public Collider2D guardCollider;
-        public Collider2D hurtCollider;
+        [SerializeField] private Rigidbody2D body;
+        [SerializeField] private Transform moveMount;
 
-        public event Action<Actor, MoveRuntime> MoveStarted;
-        public event Action<Actor, MoveRuntime> MoveFinished;
-        public event Action<Actor, MoveRuntime, InterruptReason> MoveInterrupted;
+        [Header("Startup")]
+        [SerializeField] private Move initialMove;
+
+        private event Action<Actor, MoveRuntime> MoveStarted;
+        private event Action<Actor, MoveRuntime> MoveFinished;
+        private event Action<Actor, MoveRuntime, InterruptReason> MoveInterrupted;
 
         private readonly Queue<QueuedMove> _queue = new Queue<QueuedMove>();
         private MoveRuntime _current;
+        private QueuedMove _currentQueuedMove;
         private bool _hasCurrent;
         private int _chainCount;
-        private Vector2 _moveStartPosition;
-        private Vector2 _moveEndPosition;
         private Vector2 _recoilVelocity;
         private float _recoilFriction;
         private float _nextAttackDamageMultiplier = 1f;
         private int _carriedForce;
         private MoveEventType? _forcedFollowUpTrigger;
         private int _forcedFollowUpRemaining;
+        private Move _currentMoveInstance;
 
-        public bool IsMoveRunning => _hasCurrent;
-        public MoveRuntime Current => _current;
-        public int QueueCount => _queue.Count;
-        public bool IsGuardBroken => stance <= 0;
-        public Vector2 Position => body != null ? body.position : (Vector2)transform.position;
-        public float NextAttackDamageMultiplier => _nextAttackDamageMultiplier;
-        public int CarriedForce => _carriedForce;
+        internal bool IsMoveRunning => _hasCurrent;
+        internal MoveRuntime Current => _current;
+        internal int QueueCount => _queue.Count;
+        internal bool IsGuardBroken => stance <= 0;
+        internal bool CanGuard => !IsGuardBroken && _currentMoveInstance != null && _currentMoveInstance.Guardable;
+        internal Vector2 Position => body != null ? body.position : (Vector2)transform.position;
+        internal float ChainMultiplier => Mathf.Min(1f + (_chainCount * chainStepBonus), chainMaxMultiplier);
+        internal float KnockbackResistance => knockbackResistance + (_currentMoveInstance != null ? _currentMoveInstance.KnockbackResistance : 0f);
+        internal int SpecialForce => specialForce;
+        internal Collider2D weaponCollider => _currentMoveInstance != null ? _currentMoveInstance.WeaponCollider : null;
+        internal Collider2D bodyCollider => _currentMoveInstance != null ? _currentMoveInstance.BodyCollider : null;
 
-        public float ChainMultiplier
+        private void Awake()
         {
-            get
+            if (initialMove != null)
             {
-                float value = 1f + (_chainCount * chainStepBonus);
-                return Mathf.Min(value, chainMaxMultiplier);
+                Enqueue(initialMove);
             }
         }
 
-        public void Enqueue(Move move)
+        internal void Enqueue(Move move)
         {
             if (move == null)
             {
@@ -134,13 +146,13 @@ namespace Scripts
             _queue.Enqueue(new QueuedMove { move = move });
         }
 
-        public void ClearQueue()
+        private void ClearQueue()
         {
             _queue.Clear();
             _carriedForce = 0;
         }
 
-        public bool TryStartNextMove(Func<Actor, Move, int> forceSelector)
+        internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector)
         {
             if (_hasCurrent || _queue.Count == 0)
             {
@@ -148,42 +160,16 @@ namespace Scripts
             }
 
             QueuedMove queued = _queue.Dequeue();
-            Move move = queued.move;
-            if (move == null)
+            if (queued.move == null)
             {
                 return false;
             }
 
-            int force = forceSelector != null ? forceSelector(this, move) : 3;
-            return StartMove(move, force);
+            int inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
+            return StartMove(queued, inputForce);
         }
 
-        public bool StartMove(Move move, int force)
-        {
-            if (move == null)
-            {
-                return false;
-            }
-
-            int inputForce = Mathf.Clamp(force, 1, 5);
-            int carryIn = Mathf.Min(_carriedForce, move.forceCarryIn);
-            int effectiveForce = inputForce + carryIn;
-            _carriedForce = 0;
-
-            int cost = move.GetStanceCost(effectiveForce);
-            stance = Mathf.Max(0, stance - cost);
-            GainSpecialForce(effectiveForce);
-
-            _current = new MoveRuntime(move, inputForce, effectiveForce);
-            _hasCurrent = true;
-
-            ApplyMovePresentation(move);
-            InitializeMoveMotion(move);
-            MoveStarted?.Invoke(this, _current);
-            return true;
-        }
-
-        public void Tick(float deltaTime)
+        internal void Tick(float deltaTime)
         {
             if (!_hasCurrent)
             {
@@ -192,18 +178,15 @@ namespace Scripts
             }
 
             _current.elapsed += deltaTime;
-            ApplyMoveMotion(_current);
             ApplyRecoil(deltaTime);
 
-            if (!_current.IsDone)
+            if (_current.IsDone)
             {
-                return;
+                FinishCurrentMove();
             }
-
-            FinishCurrentMove();
         }
 
-        public void Interrupt(MoveEventType trigger, InterruptReason reason)
+        internal void Interrupt(MoveEventType trigger, InterruptReason reason)
         {
             if (!_hasCurrent)
             {
@@ -211,9 +194,32 @@ namespace Scripts
             }
 
             MoveRuntime interrupted = _current;
-            Move next = interrupted.move != null ? interrupted.move.GetNext(trigger) : null;
+            QueuedMove interruptedQueuedMove = _currentQueuedMove;
+            Move next = null;
+            if (interrupted.move != null)
+            {
+                switch (trigger)
+                {
+                    case MoveEventType.Hit:
+                        next = interrupted.move.HitMove;
+                        break;
+                    case MoveEventType.Guard:
+                        next = interrupted.move.GuardMove;
+                        break;
+                    case MoveEventType.NormalEnd:
+                        if (interrupted.move.After.Count > 0)
+                        {
+                            next = interrupted.move.After[0];
+                        }
+                        break;
+                }
+            }
+
             _hasCurrent = false;
+            _currentQueuedMove = null;
             _carriedForce = 0;
+            ReleaseMoveInstance(_currentMoveInstance);
+            _currentMoveInstance = null;
             MoveInterrupted?.Invoke(this, interrupted, reason);
 
             _chainCount = 0;
@@ -232,44 +238,50 @@ namespace Scripts
                 _forcedFollowUpRemaining = 2;
             }
 
-            if (next != null)
+            if (next == null)
             {
-                StartMove(next, interrupted.force);
                 return;
             }
+
+            QueuedMove queued = new QueuedMove { move = next };
+            if (interruptedQueuedMove != null)
+            {
+                queued.forceCarryIn = interruptedQueuedMove.forceCarryOut;
+            }
+
+            StartMove(queued, interrupted.selectedForce);
         }
 
-        public void ApplyHpDamage(int amount)
+        internal void ApplyHpDamage(int amount)
         {
             hp = Mathf.Max(0, hp - Mathf.Max(0, amount));
         }
 
-        public void ApplyStanceDamage(int amount)
+        internal void ApplyStanceDamage(int amount)
         {
-            stance = Mathf.Max(0, stance - Mathf.Max(0, amount));
+            int reduced = Mathf.Max(0, amount - (_currentMoveInstance != null ? _currentMoveInstance.StanceDamageResistance : 0));
+            stance = Mathf.Max(0, stance - reduced);
         }
 
-        public void RecoverStance(int amount)
+        internal void RecoverStance(int amount)
         {
             stance = Mathf.Clamp(stance + Mathf.Max(0, amount), 0, maxStance);
         }
 
-        public void GainSpecialForce(int amount)
+        internal void GainSpecialForce(int amount)
         {
-            if (amount <= 0)
+            if (amount > 0)
             {
-                return;
+                specialForce = Mathf.Clamp(specialForce + amount, 0, maxSpecialForce);
             }
-
-            specialForce = Mathf.Clamp(specialForce + amount, 0, maxSpecialForce);
         }
 
-        public bool CanSpendSpecialForce(int amount)
+        internal bool CanSpendSpecialForce(int amount)
         {
             return amount >= 0 && specialForce >= amount;
         }
 
-        public bool SpendSpecialForce(int amount)
+        internal bool SpendSpecialForce(int amount)
         {
             if (!CanSpendSpecialForce(amount))
             {
@@ -280,19 +292,19 @@ namespace Scripts
             return true;
         }
 
-        public void SetNextAttackDamageMultiplier(float multiplier)
+        internal void SetNextAttackDamageMultiplier(float multiplier)
         {
             _nextAttackDamageMultiplier = Mathf.Max(1f, multiplier);
         }
 
-        public float ConsumeNextAttackDamageMultiplier()
+        internal float ConsumeNextAttackDamageMultiplier()
         {
             float value = _nextAttackDamageMultiplier;
             _nextAttackDamageMultiplier = 1f;
             return value;
         }
 
-        public void ResetAndApplyKnockback(Vector2 direction, float initialSpeed, float friction)
+        internal void ResetAndApplyKnockback(Vector2 direction, float initialSpeed, float friction)
         {
             if (direction.sqrMagnitude <= 0f || initialSpeed <= 0f)
             {
@@ -310,35 +322,83 @@ namespace Scripts
             _recoilFriction = Mathf.Max(0f, friction);
         }
 
+        private bool StartMove(QueuedMove queued, int inputForce)
+        {
+            if (queued == null || queued.move == null)
+            {
+                return false;
+            }
+
+            int selectedForce = Mathf.Clamp(inputForce, 1, 5);
+            Move runtimeMove = CreateMoveInstance(queued.move);
+            if (runtimeMove == null)
+            {
+                return false;
+            }
+
+            int carriedForce = _carriedForce;
+            _carriedForce = 0;
+
+            queued.forceCarryIn = carriedForce;
+            queued.move = runtimeMove;
+
+            CombatContext context = new CombatContext
+            {
+                user = this
+            };
+
+            _currentMoveInstance = runtimeMove;
+            _currentQueuedMove = queued;
+            _current = new MoveRuntime(runtimeMove, selectedForce, selectedForce + carriedForce);
+            _hasCurrent = true;
+
+            queued.Play(selectedForce, context);
+            stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
+            GainSpecialForce(selectedForce);
+            MoveStarted?.Invoke(this, _current);
+            return true;
+        }
+
         private void FinishCurrentMove()
         {
             MoveRuntime finished = _current;
+            QueuedMove finishedQueuedMove = _currentQueuedMove;
+
             _hasCurrent = false;
+            _currentQueuedMove = null;
 
             if (finished.move != null)
             {
-                RecoverStance(finished.move.stanceRecoveryOnFinish);
-                _carriedForce = finished.move.forceCarryOut;
-            }
-            else
-            {
-                _carriedForce = 0;
+                RecoverStance(finished.move.StanceRecovery);
             }
 
+            _carriedForce = finishedQueuedMove != null ? finishedQueuedMove.forceCarryOut : 0;
+
             MoveFinished?.Invoke(this, finished);
+            ReleaseMoveInstance(_currentMoveInstance);
+            _currentMoveInstance = null;
 
             if (_forcedFollowUpRemaining > 0)
             {
-                if (finished.move != null && finished.move.skipAdditionalInterruptFollowUp)
+                if (finished.move != null && finished.move.SkipAdditionalInterruptFollowUp)
                 {
                     _forcedFollowUpTrigger = null;
                     _forcedFollowUpRemaining = 0;
                 }
                 else if (_forcedFollowUpTrigger.HasValue && finished.move != null)
                 {
-                    Move forced = finished.move.GetNext(_forcedFollowUpTrigger.Value);
-                    _forcedFollowUpRemaining--;
+                    Move forced = null;
+                    switch (_forcedFollowUpTrigger.Value)
+                    {
+                        case MoveEventType.Hit:
+                            forced = finished.move.HitMove;
+                            break;
+                        case MoveEventType.Guard:
+                            forced = finished.move.GuardMove;
+                            break;
+                    }
 
+                    _forcedFollowUpRemaining--;
                     if (_forcedFollowUpRemaining <= 0)
                     {
                         _forcedFollowUpTrigger = null;
@@ -346,7 +406,9 @@ namespace Scripts
 
                     if (forced != null)
                     {
-                        StartMove(forced, finished.selectedForce);
+                        QueuedMove forcedQueuedMove = new QueuedMove { move = forced };
+                        forcedQueuedMove.forceCarryIn = _carriedForce;
+                        StartMove(forcedQueuedMove, finished.selectedForce);
                         return;
                     }
                 }
@@ -355,71 +417,31 @@ namespace Scripts
             if (_queue.Count > 0)
             {
                 _chainCount++;
+                _queue.Peek().forceCarryIn = _carriedForce;
             }
             else
             {
                 _chainCount = 0;
             }
 
-            Move autoNext = finished.move != null ? finished.move.GetNext(MoveEventType.NormalEnd) : null;
-            if (autoNext != null)
-            {
-                StartMove(autoNext, finished.selectedForce);
-            }
-        }
-
-        private void ApplyMovePresentation(Move move)
-        {
-            if (spriteRenderer != null && move != null && move.frameSprite != null)
-            {
-                spriteRenderer.sprite = move.frameSprite;
-            }
-        }
-
-        private void InitializeMoveMotion(Move move)
-        {
-            if (move == null)
+            if (finished.move == null || finished.move.After.Count <= 0)
             {
                 return;
             }
 
-            Vector2 current = GetActorPosition();
-
-            if (move.useTeleport)
-            {
-                current += move.teleportOffset;
-                SetActorPosition(current);
-            }
-
-            _moveStartPosition = current;
-            _moveEndPosition = move.useStepMovement ? current + move.stepOffset : current;
-
-            if (!move.useStepMovement)
-            {
-                return;
-            }
-
-            if (move.duration <= 0f)
-            {
-                SetActorPosition(_moveEndPosition);
-            }
+            QueuedMove autoQueuedMove = new QueuedMove { move = finished.move.After[0] };
+            autoQueuedMove.forceCarryIn = _carriedForce;
+            StartMove(autoQueuedMove, finished.selectedForce);
         }
 
-        private void ApplyMoveMotion(MoveRuntime runtime)
+        internal void MoveBy(Vector2 delta)
         {
-            if (runtime.move == null || !runtime.move.useStepMovement)
-            {
-                return;
-            }
-
-            float t = runtime.Normalized;
-            Vector2 target = Vector2.Lerp(_moveStartPosition, _moveEndPosition, t);
-            SetActorPosition(target);
+            SetActorPosition(Position + delta);
         }
 
-        private Vector2 GetActorPosition()
+        internal void MoveTo(Vector2 position)
         {
-            return body != null ? body.position : (Vector2)transform.position;
+            SetActorPosition(position);
         }
 
         private void SetActorPosition(Vector2 position)
@@ -433,6 +455,28 @@ namespace Scripts
             transform.position = position;
         }
 
+        private Move CreateMoveInstance(Move template)
+        {
+            Transform parent = moveMount != null ? moveMount : transform;
+            Move instance = Instantiate(template, parent);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+
+            return instance;
+        }
+
+        private void ReleaseMoveInstance(Move instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            instance.gameObject.SetActive(false);
+            Destroy(instance.gameObject);
+        }
+
         private void ApplyRecoil(float deltaTime)
         {
             if (_recoilVelocity.sqrMagnitude <= 0f || deltaTime <= 0f)
@@ -443,12 +487,7 @@ namespace Scripts
             Vector2 delta = _recoilVelocity * deltaTime;
             SetActorPosition(Position + delta);
 
-            // 반동 중에도 기존 Move 진행 경로가 같이 밀려나도록 보정.
-            _moveStartPosition += delta;
-            _moveEndPosition += delta;
-
-            float speed = _recoilVelocity.magnitude;
-            speed = Mathf.MoveTowards(speed, 0f, _recoilFriction * deltaTime);
+            float speed = Mathf.MoveTowards(_recoilVelocity.magnitude, 0f, _recoilFriction * deltaTime);
             _recoilVelocity = speed > 0f ? _recoilVelocity.normalized * speed : Vector2.zero;
         }
     }

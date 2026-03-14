@@ -213,40 +213,22 @@ namespace Scripts
                 return ExchangeResult.Clash;
             }
 
-            bool aWeaponBGuard = !b.IsGuardBroken && Touching(a.weaponCollider, b.guardCollider);
-            bool bWeaponAGuard = !a.IsGuardBroken && Touching(b.weaponCollider, a.guardCollider);
+            bool aWeaponBBody = Touching(a.weaponCollider, b.bodyCollider);
+            bool bWeaponABody = Touching(b.weaponCollider, a.bodyCollider);
 
-            if (aWeaponBGuard && bWeaponAGuard)
+            if (aWeaponBBody && bWeaponABody)
             {
                 return ExchangeResult.Clash;
             }
 
-            if (aWeaponBGuard)
+            if (aWeaponBBody)
             {
-                return ExchangeResult.ABlocksB;
+                return b.CanGuard ? ExchangeResult.ABlocksB : ExchangeResult.AHitsB;
             }
 
-            if (bWeaponAGuard)
+            if (bWeaponABody)
             {
-                return ExchangeResult.BBlocksA;
-            }
-
-            bool aWeaponBHurt = Touching(a.weaponCollider, b.hurtCollider);
-            bool bWeaponAHurt = Touching(b.weaponCollider, a.hurtCollider);
-
-            if (aWeaponBHurt && bWeaponAHurt)
-            {
-                return ExchangeResult.Clash;
-            }
-
-            if (aWeaponBHurt)
-            {
-                return ExchangeResult.AHitsB;
-            }
-
-            if (bWeaponAHurt)
-            {
-                return ExchangeResult.BHitsA;
+                return a.CanGuard ? ExchangeResult.BBlocksA : ExchangeResult.BHitsA;
             }
 
             return ExchangeResult.None;
@@ -268,10 +250,10 @@ namespace Scripts
                 target = actorB,
                 manager = this,
                 exchangeResult = result,
-                userStanceDamage = aState.move != null ? aState.move.baseStanceDamage : 0,
-                targetStanceDamage = bState.move != null ? bState.move.baseStanceDamage : 0,
-                userHpDamage = aState.move != null ? Mathf.RoundToInt(aState.move.baseDamage * actorA.ChainMultiplier) : 0,
-                targetHpDamage = bState.move != null ? Mathf.RoundToInt(bState.move.baseDamage * actorB.ChainMultiplier) : 0
+                userStanceDamage = aState.move != null ? aState.move.StanceDamage : 0,
+                targetStanceDamage = bState.move != null ? bState.move.StanceDamage : 0,
+                userHpDamage = aState.move != null ? Mathf.RoundToInt(aState.move.Damage * actorA.ChainMultiplier) : 0,
+                targetHpDamage = bState.move != null ? Mathf.RoundToInt(bState.move.Damage * actorB.ChainMultiplier) : 0
             };
 
             switch (result)
@@ -357,11 +339,11 @@ namespace Scripts
             float speedA = baseKnockbackSpeed
                 + (context.targetHpDamage * hpDamageToKnockback)
                 + (context.targetStanceDamage * stanceDamageToKnockback)
-                - context.user.knockbackResistance;
+                - context.user.KnockbackResistance;
             float speedB = baseKnockbackSpeed
                 + (context.userHpDamage * hpDamageToKnockback)
                 + (context.userStanceDamage * stanceDamageToKnockback)
-                - context.target.knockbackResistance;
+                - context.target.KnockbackResistance;
 
             KnockbackSpeeds result;
             result.speedA = Mathf.Clamp(speedA, 0f, maxKnockbackSpeed);

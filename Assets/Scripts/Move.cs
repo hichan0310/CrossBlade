@@ -20,136 +20,47 @@ namespace Scripts
         HitReaction
     }
 
-    public abstract class Move : MonoBehaviour
+    public class Move : MonoBehaviour
     {
         [Header("Identity")]
-        public string moveId = "move";
-        public MoveCategory category = MoveCategory.Neutral;
+        [SerializeField] private string moveId = "move";
+        [SerializeField] private MoveCategory category = MoveCategory.Neutral;
 
-        [Header("Timing")]
-        [Min(0.01f)] public float duration = 0.30f;
-
-        [Header("Visual")]
-        public Sprite frameSprite;
-
-        [Header("Motion")]
-        public bool useStepMovement;
-        public Vector2 stepOffset;
-        public bool useTeleport;
-        public Vector2 teleportOffset;
-
-        [Header("Stance")]
-        [Min(0f)] public float stanceCostScale = 1f;
-        public int stanceRecoveryOnFinish = 1;
+        [Header("Runtime View")]
+        [SerializeField] private Collider2D weaponCollider;
+        [SerializeField] private Collider2D bodyCollider;
 
         [Header("Combat")]
-        public int baseDamage = 0;
-        public int baseStanceDamage = 0;
+        [SerializeField, Min(0f)] private float knockbackResistance;
+        [SerializeField, Min(0)] private int stanceDamageResistance;
 
         [Header("Graph")]
-        public Move hitMove;
-        public Move guardMove;
-        public List<Move> after = new List<Move>();
-        public bool skipAdditionalInterruptFollowUp;
+        [SerializeField] private Move hitMove;
+        [SerializeField] private Move guardMove;
+        [SerializeField] private List<Move> after = new List<Move>();
+        [SerializeField] private bool guardable;
+        [SerializeField] private bool skipAdditionalInterruptFollowUp;
 
-        public int GetStanceCost(int force)
+        internal string MoveId => moveId;
+        internal MoveCategory Category => category;
+        internal Collider2D WeaponCollider => weaponCollider;
+        internal Collider2D BodyCollider => bodyCollider;
+        internal float KnockbackResistance => knockbackResistance;
+        internal int StanceDamageResistance => stanceDamageResistance;
+        internal Move HitMove => hitMove;
+        internal Move GuardMove => guardMove;
+        internal IList<Move> After => after;
+        internal bool Guardable => guardable;
+        internal bool SkipAdditionalInterruptFollowUp => skipAdditionalInterruptFollowUp;
+        internal virtual float Duration => 0.30f;
+        internal virtual int Damage => 0;
+        internal virtual int StanceDamage => 0;
+        internal virtual int StanceCost => 0;
+        internal virtual int StanceRecovery => 0;
+
+        internal virtual void Play(CombatContext combatContext, int force, out int carryOut)
         {
-            return Mathf.CeilToInt(force * stanceCostScale);
-        }
-
-        public virtual float GetTravelDistance(int force)
-        {
-            return 0f;
-        }
-
-        public virtual int forceCarryIn
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public virtual int forceCarryOut
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public Move GetNext(MoveEventType trigger)
-        {
-            switch (trigger)
-            {
-                case MoveEventType.Hit:
-                    return hitMove;
-                case MoveEventType.Guard:
-                    return guardMove;
-                case MoveEventType.Clash:
-                case MoveEventType.NormalEnd:
-                    return (after != null && after.Count > 0) ? after[0] : null;
-                default:
-                    return null;
-            }
-        }
-
-        protected static int ClampInputForce(int force)
-        {
-            return Mathf.Clamp(force, 1, 5);
-        }
-    }
-
-    [AddComponentMenu("CrossBlade/Move/Base Move")]
-    public class BaseMove : Move
-    {
-    }
-
-    [AddComponentMenu("CrossBlade/Move/Attack Move")]
-    public class AttackMove : Move
-    {
-        [Tooltip("Force 1~5 each slot. Missing slots reuse nearest valid value.")]
-        public float[] travelDistanceByForce = new float[5];
-
-        public override float GetTravelDistance(int force)
-        {
-            return ReadByForce(travelDistanceByForce, force);
-        }
-
-        private static float ReadByForce(float[] values, int force)
-        {
-            if (values == null || values.Length == 0)
-            {
-                return 0f;
-            }
-
-            int idx = ClampInputForce(force) - 1;
-            idx = Mathf.Clamp(idx, 0, values.Length - 1);
-            return values[idx];
-        }
-    }
-
-    [AddComponentMenu("CrossBlade/Move/Dash Move")]
-    public class DashMove : Move
-    {
-        [Tooltip("Force 1~5 each slot. Missing slots reuse nearest valid value.")]
-        public float[] travelDistanceByForce = new float[5];
-
-        public override float GetTravelDistance(int force)
-        {
-            return ReadByForce(travelDistanceByForce, force);
-        }
-
-        private static float ReadByForce(float[] values, int force)
-        {
-            if (values == null || values.Length == 0)
-            {
-                return 0f;
-            }
-
-            int idx = ClampInputForce(force) - 1;
-            idx = Mathf.Clamp(idx, 0, values.Length - 1);
-            return values[idx];
+            carryOut = 0;
         }
     }
 }

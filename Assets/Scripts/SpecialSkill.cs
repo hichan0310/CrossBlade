@@ -216,7 +216,7 @@ namespace Scripts
                 return;
             }
 
-            actor.SpendSpecialForce(Mathf.Min(actor.specialForce, -amount));
+            actor.SpendSpecialForce(Mathf.Min(actor.SpecialForce, -amount));
         }
     }
 
