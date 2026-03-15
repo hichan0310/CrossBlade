@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Scripts
@@ -62,40 +63,45 @@ namespace Scripts
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
 
-            if (actorA.IsMoveRunning && actorB.IsMoveRunning)
+            if (actorA.IsMoveRunning && actorB.IsMoveRunning
+                && actorA.IsReadyForExchange && actorB.IsReadyForExchange
+                && !actorA.HasResolvedExchange && !actorB.HasResolvedExchange)
             {
                 ExchangeResult result = ResolveExchange(actorA, actorB);
+                if(result==ExchangeResult.ABlocksB || result == ExchangeResult.BBlocksA || actorA.Current.move.hasWeaponCollider || actorB.Current.move.hasWeaponCollider)
+                {
+                    Debug.Log(result);
+                }
                 ApplyExchange(result);
             }
         }
 
         public void TryStartActors()
         {
+            if (actorA.IsMoveRunning || actorB.IsMoveRunning)
+            {
+                return;
+            }
+
             bool startedA = false;
             bool startedB = false;
 
-            if (!actorA.IsMoveRunning)
+            if (ShouldBlockStartA())
             {
-                if (ShouldBlockStartA())
-                {
-                    ConsumeStopTurnA();
-                }
-                else
-                {
-                    startedA = actorA.TryStartNextMove(SelectForce);
-                }
+                ConsumeStopTurnA();
+            }
+            else
+            {
+                startedA = actorA.TryStartNextMove(SelectForce);
             }
 
-            if (!actorB.IsMoveRunning)
+            if (ShouldBlockStartB())
             {
-                if (ShouldBlockStartB())
-                {
-                    ConsumeStopTurnB();
-                }
-                else
-                {
-                    startedB = actorB.TryStartNextMove(SelectForce);
-                }
+                ConsumeStopTurnB();
+            }
+            else
+            {
+                startedB = actorB.TryStartNextMove(SelectForce);
             }
 
             // 상대가 새 Move를 시작하면 다음 정지 턴을 소비할 수 있게 윈도우를 리셋한다.
@@ -240,6 +246,9 @@ namespace Scripts
             {
                 return;
             }
+
+            actorA.MarkCurrentMoveExchanged();
+            actorB.MarkCurrentMoveExchanged();
 
             MoveRuntime aState = actorA.Current;
             MoveRuntime bState = actorB.Current;

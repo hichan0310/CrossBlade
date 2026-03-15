@@ -29,6 +29,10 @@ namespace Scripts
         [Header("Runtime View")]
         [SerializeField] private Collider2D weaponCollider;
         [SerializeField] private Collider2D bodyCollider;
+        public bool hasWeaponCollider => weaponCollider!=null;
+
+        [Header("Timing")]
+        [SerializeField, Min(0.01f)] private float duration = 0.30f;
 
         [Header("Combat")]
         [SerializeField, Min(0f)] private float knockbackResistance;
@@ -38,7 +42,7 @@ namespace Scripts
         [SerializeField] private Move hitMove;
         [SerializeField] private Move guardMove;
         [SerializeField] private List<Move> after = new List<Move>();
-        [SerializeField] private bool guardable;
+        [SerializeField] private bool guardable = true;
         [SerializeField] private bool skipAdditionalInterruptFollowUp;
 
         internal string MoveId => moveId;
@@ -52,7 +56,7 @@ namespace Scripts
         internal IList<Move> After => after;
         internal bool Guardable => guardable;
         internal bool SkipAdditionalInterruptFollowUp => skipAdditionalInterruptFollowUp;
-        internal virtual float Duration => 0.30f;
+        internal virtual float Duration => duration;
         internal virtual int Damage => 0;
         internal virtual int StanceDamage => 0;
         internal virtual int StanceCost => 0;

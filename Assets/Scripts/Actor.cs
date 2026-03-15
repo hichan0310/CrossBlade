@@ -94,6 +94,10 @@ namespace Scripts
         [Header("Startup")]
         [SerializeField] private Move initialMove;
 
+        [Header("Debug")]
+        [SerializeField] private Move currentMoveDebug;
+        [SerializeField] private float moveStartDelay = 0.1f;
+
         private event Action<Actor, MoveRuntime> MoveStarted;
         private event Action<Actor, MoveRuntime> MoveFinished;
         private event Action<Actor, MoveRuntime, InterruptReason> MoveInterrupted;
@@ -110,8 +114,14 @@ namespace Scripts
         private MoveEventType? _forcedFollowUpTrigger;
         private int _forcedFollowUpRemaining;
         private Move _currentMoveInstance;
+        private bool _currentMoveExchanged;
+        private float _moveStartupRemaining;
+        private QueuedMove _pendingQueuedMove;
+        private int _pendingInputForce;
 
         internal bool IsMoveRunning => _hasCurrent;
+        internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
+        internal bool HasResolvedExchange => _currentMoveExchanged;
         internal MoveRuntime Current => _current;
         internal int QueueCount => _queue.Count;
         internal bool IsGuardBroken => stance <= 0;
@@ -154,18 +164,37 @@ namespace Scripts
 
         internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector)
         {
-            if (_hasCurrent || _queue.Count == 0)
+            if (_hasCurrent)
             {
                 return false;
             }
 
-            QueuedMove queued = _queue.Dequeue();
-            if (queued.move == null)
+            QueuedMove queued = null;
+            int inputForce = 3;
+
+            if (_pendingQueuedMove != null)
             {
-                return false;
+                queued = _pendingQueuedMove;
+                inputForce = _pendingInputForce;
+                _pendingQueuedMove = null;
+                _pendingInputForce = 0;
+            }
+            else
+            {
+                if (_queue.Count == 0)
+                {
+                    return false;
+                }
+
+                queued = _queue.Dequeue();
+                if (queued.move == null)
+                {
+                    return false;
+                }
+
+                inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
             }
 
-            int inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
             return StartMove(queued, inputForce);
         }
 
@@ -173,6 +202,13 @@ namespace Scripts
         {
             if (!_hasCurrent)
             {
+                ApplyRecoil(deltaTime);
+                return;
+            }
+
+            if (_moveStartupRemaining > 0f)
+            {
+                _moveStartupRemaining = Mathf.Max(0f, _moveStartupRemaining - deltaTime);
                 ApplyRecoil(deltaTime);
                 return;
             }
@@ -195,21 +231,22 @@ namespace Scripts
 
             MoveRuntime interrupted = _current;
             QueuedMove interruptedQueuedMove = _currentQueuedMove;
+            Move interruptedSourceMove = interruptedQueuedMove != null ? interruptedQueuedMove.move : interrupted.move;
             Move next = null;
-            if (interrupted.move != null)
+            if (interruptedSourceMove != null)
             {
                 switch (trigger)
                 {
                     case MoveEventType.Hit:
-                        next = interrupted.move.HitMove;
+                        next = interruptedSourceMove.HitMove;
                         break;
                     case MoveEventType.Guard:
-                        next = interrupted.move.GuardMove;
+                        next = interruptedSourceMove.GuardMove;
                         break;
                     case MoveEventType.NormalEnd:
-                        if (interrupted.move.After.Count > 0)
+                        if (interruptedSourceMove.After.Count > 0)
                         {
-                            next = interrupted.move.After[0];
+                            next = interruptedSourceMove.After[0];
                         }
                         break;
                 }
@@ -218,8 +255,13 @@ namespace Scripts
             _hasCurrent = false;
             _currentQueuedMove = null;
             _carriedForce = 0;
+            _currentMoveExchanged = false;
+            _moveStartupRemaining = 0f;
+            _pendingQueuedMove = null;
+            _pendingInputForce = 0;
             ReleaseMoveInstance(_currentMoveInstance);
             _currentMoveInstance = null;
+            currentMoveDebug = null;
             MoveInterrupted?.Invoke(this, interrupted, reason);
 
             _chainCount = 0;
@@ -329,8 +371,16 @@ namespace Scripts
                 return false;
             }
 
+            if (!_hasCurrent && _currentMoveInstance != null)
+            {
+                ReleaseMoveInstance(_currentMoveInstance);
+                _currentMoveInstance = null;
+                currentMoveDebug = null;
+            }
+
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
-            Move runtimeMove = CreateMoveInstance(queued.move);
+            Move sourceMove = queued.move;
+            Move runtimeMove = CreateMoveInstance(sourceMove);
             if (runtimeMove == null)
             {
                 return false;
@@ -340,7 +390,6 @@ namespace Scripts
             _carriedForce = 0;
 
             queued.forceCarryIn = carriedForce;
-            queued.move = runtimeMove;
 
             CombatContext context = new CombatContext
             {
@@ -348,11 +397,16 @@ namespace Scripts
             };
 
             _currentMoveInstance = runtimeMove;
+            currentMoveDebug = runtimeMove;
             _currentQueuedMove = queued;
             _current = new MoveRuntime(runtimeMove, selectedForce, selectedForce + carriedForce);
             _hasCurrent = true;
+            _currentMoveExchanged = false;
+            _moveStartupRemaining = moveStartDelay;
 
+            queued.move = runtimeMove;
             queued.Play(selectedForce, context);
+            queued.move = sourceMove;
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
             GainSpecialForce(selectedForce);
             MoveStarted?.Invoke(this, _current);
@@ -363,9 +417,12 @@ namespace Scripts
         {
             MoveRuntime finished = _current;
             QueuedMove finishedQueuedMove = _currentQueuedMove;
+            Move finishedSourceMove = finishedQueuedMove != null ? finishedQueuedMove.move : finished.move;
 
             _hasCurrent = false;
             _currentQueuedMove = null;
+            _currentMoveExchanged = false;
+            _moveStartupRemaining = 0f;
 
             if (finished.move != null)
             {
@@ -375,26 +432,24 @@ namespace Scripts
             _carriedForce = finishedQueuedMove != null ? finishedQueuedMove.forceCarryOut : 0;
 
             MoveFinished?.Invoke(this, finished);
-            ReleaseMoveInstance(_currentMoveInstance);
-            _currentMoveInstance = null;
 
             if (_forcedFollowUpRemaining > 0)
             {
-                if (finished.move != null && finished.move.SkipAdditionalInterruptFollowUp)
+                if (finishedSourceMove != null && finishedSourceMove.SkipAdditionalInterruptFollowUp)
                 {
                     _forcedFollowUpTrigger = null;
                     _forcedFollowUpRemaining = 0;
                 }
-                else if (_forcedFollowUpTrigger.HasValue && finished.move != null)
+                else if (_forcedFollowUpTrigger.HasValue && finishedSourceMove != null)
                 {
                     Move forced = null;
                     switch (_forcedFollowUpTrigger.Value)
                     {
                         case MoveEventType.Hit:
-                            forced = finished.move.HitMove;
+                            forced = finishedSourceMove.HitMove;
                             break;
                         case MoveEventType.Guard:
-                            forced = finished.move.GuardMove;
+                            forced = finishedSourceMove.GuardMove;
                             break;
                     }
 
@@ -408,7 +463,8 @@ namespace Scripts
                     {
                         QueuedMove forcedQueuedMove = new QueuedMove { move = forced };
                         forcedQueuedMove.forceCarryIn = _carriedForce;
-                        StartMove(forcedQueuedMove, finished.selectedForce);
+                        _pendingQueuedMove = forcedQueuedMove;
+                        _pendingInputForce = finished.selectedForce;
                         return;
                     }
                 }
@@ -424,19 +480,26 @@ namespace Scripts
                 _chainCount = 0;
             }
 
-            if (finished.move == null || finished.move.After.Count <= 0)
+            if (finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
             {
                 return;
             }
 
-            QueuedMove autoQueuedMove = new QueuedMove { move = finished.move.After[0] };
+            int nextIndex = UnityEngine.Random.Range(0, finishedSourceMove.After.Count);
+            QueuedMove autoQueuedMove = new QueuedMove { move = finishedSourceMove.After[nextIndex] };
             autoQueuedMove.forceCarryIn = _carriedForce;
-            StartMove(autoQueuedMove, finished.selectedForce);
+            _pendingQueuedMove = autoQueuedMove;
+            _pendingInputForce = finished.selectedForce;
         }
 
         internal void MoveBy(Vector2 delta)
         {
             SetActorPosition(Position + delta);
+        }
+
+        internal void MarkCurrentMoveExchanged()
+        {
+            _currentMoveExchanged = true;
         }
 
         internal void MoveTo(Vector2 position)
@@ -473,7 +536,11 @@ namespace Scripts
                 return;
             }
 
-            instance.gameObject.SetActive(false);
+            if (!instance.name.EndsWith("__DYING", StringComparison.Ordinal))
+            {
+                instance.name += "__DYING";
+            }
+
             Destroy(instance.gameObject);
         }
 
