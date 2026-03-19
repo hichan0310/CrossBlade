@@ -165,3 +165,12 @@ MonoBehaviour:
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
   facingMode: 0
+  startupApproachSpeed: 0
+  activeApproachSpeed: 0
+  approachStopDistance: 1.5
+  movementMode: 0
+  startupMoveSpeed: 0
+  activeMoveSpeed: 0
+  stopDistance: 1
+  passThroughOffset: 0.5
+  fixedTravelDistance: 1.5

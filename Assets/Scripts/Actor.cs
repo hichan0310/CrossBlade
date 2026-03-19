@@ -130,6 +130,9 @@ namespace Scripts
         private QueuedMove _pendingQueuedMove;
         private int _pendingInputForce;
 
+        //돌진 만들어본거 (안써도됨)
+        private Vector2 _moveStartPosition;
+        //돌진 만들어본거 (안써도됨)
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
@@ -153,6 +156,31 @@ namespace Scripts
         internal bool IsInStartup => _hasCurrent && _moveStartupRemaining > 0f;
         internal float StartupRemaining => _moveStartupRemaining;
         internal string CurrentMoveId => _current.move != null ? _current.move.MoveId : "-";
+
+        internal Vector2 MoveStartPosition => _moveStartPosition;
+
+        //돌진 만들어본거 (안써도됨)
+        internal int FacingSign
+        {
+            get
+            {
+                Transform root = facingRoot != null ? facingRoot : transform;
+                float sign = Mathf.Sign(root.localScale.x);
+
+                if (Mathf.Abs(sign) <= 0.001f)
+                {
+                    sign = 1f;
+                }
+
+                if (!positiveScaleFacesRight)
+                {
+                    sign *= -1f;
+                }
+
+                return sign >= 0f ? 1 : -1;
+            }
+        }
+        //돌진 만들어본거 (안써도됨)
 
         // targetPosition의 x 위치를 기준으로 좌우 방향만 전환
         internal void FaceTowards(Vector2 targetPosition)
@@ -460,7 +488,9 @@ namespace Scripts
             _hasCurrent = true;
             _currentMoveExchanged = false;
             _moveStartupRemaining = moveStartDelay;
-
+            //돌진 만들어본거 (안써도됨)
+            _moveStartPosition = Position;
+            //돌진 만들어본거 (안써도됨)
             queued.move = runtimeMove;
             queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
