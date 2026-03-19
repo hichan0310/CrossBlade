@@ -51,8 +51,6 @@ namespace Scripts
         [Header("Combat")] 
         [SerializeField, Min(0f)] private float knockbackResistance;
         [SerializeField, Min(0)] private int stanceDamageResistance;
-        [SerializeField, Min(0)] private int chaseMaxLength;
-        [SerializeField, ] private int chaseDuration;
 
         [Header("Graph")]
         [SerializeField] private Move hitMove;
