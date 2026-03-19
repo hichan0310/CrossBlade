@@ -1,3 +1,4 @@
+// 각 Actor의 현재 상태를 보여주는 임시 UI 어렵지 않은 코드라 설명은 생략
 // 추가한거
 using TMPro;
 using UnityEngine;

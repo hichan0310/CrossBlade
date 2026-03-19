@@ -90,6 +90,10 @@ namespace Scripts
         [Header("References")]
         [SerializeField] private Rigidbody2D body;
         [SerializeField] private Transform moveMount;
+        // 추가한거
+        [SerializeField] private Transform facingRoot;
+        [SerializeField] private bool positiveScaleFacesRight = true;
+        // 추가한거
 
         [Header("Startup")]
         [SerializeField] private Move initialMove;
@@ -142,6 +146,45 @@ namespace Scripts
         internal bool IsInStartup => _hasCurrent && _moveStartupRemaining > 0f;
         internal float StartupRemaining => _moveStartupRemaining;
         internal string CurrentMoveId => _current.move != null ? _current.move.MoveId : "-";
+
+        // targetPosition의 x 위치를 기준으로 좌우 방향만 전환
+        internal void FaceTowards(Vector2 targetPosition)
+        {
+            float deltaX = targetPosition.x - Position.x;
+            if (Mathf.Abs(deltaX) <= 0.001f)
+            {
+                return;
+            }
+
+            SetFacing(deltaX > 0f ? 1 : -1);
+        }
+
+        private void SetFacing(int direction)
+        {
+            Transform root = facingRoot != null ? facingRoot : transform;
+
+            Vector3 scale = root.localScale;
+            float absX = Mathf.Abs(scale.x);
+            float sign = direction > 0 ? 1f : -1f;
+
+            if (!positiveScaleFacesRight)
+            {
+                sign *= -1f;
+            }
+
+            scale.x = absX * sign;
+            root.localScale = scale;
+        }
+
+        internal void FaceDirection(int direction)
+        {
+            if (direction == 0)
+            {
+                return;
+            }
+
+            SetFacing(direction > 0 ? 1 : -1);
+        }
 
         // 추가한거
 
