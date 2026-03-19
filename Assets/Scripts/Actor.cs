@@ -132,6 +132,18 @@ namespace Scripts
         internal int SpecialForce => specialForce;
         internal Collider2D weaponCollider => _currentMoveInstance != null ? _currentMoveInstance.WeaponCollider : null;
         internal Collider2D bodyCollider => _currentMoveInstance != null ? _currentMoveInstance.BodyCollider : null;
+        // 추가한거
+        internal string ActorId => actorId;
+        internal int Hp => hp;
+        internal int MaxHp => maxHp;
+        internal int Stance => stance;
+        internal int MaxStance => maxStance;
+        internal int MaxSpecialForce => maxSpecialForce;
+        internal bool IsInStartup => _hasCurrent && _moveStartupRemaining > 0f;
+        internal float StartupRemaining => _moveStartupRemaining;
+        internal string CurrentMoveId => _current.move != null ? _current.move.MoveId : "-";
+
+        // 추가한거
 
         private void Awake()
         {
