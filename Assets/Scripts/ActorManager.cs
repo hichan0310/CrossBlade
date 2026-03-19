@@ -78,9 +78,9 @@ namespace Scripts
             // 추가한거
             UpdateFacing();
             // 추가한거
-            //돌진 만들어본거 (안써도됨)
+            //돌진 만들어본거
             ApplyMovement(deltaTime);
-            //돌진 만들어본거 (안써도됨)
+            //돌진 만들어본거
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
 
@@ -121,13 +121,6 @@ namespace Scripts
 
             switch (mode)
             {
-                case FacingMode.ForceFaceRight:
-                    actor.FaceDirection(1);
-                    return;
-
-                case FacingMode.ForceFaceLeft:
-                    actor.FaceDirection(-1);
-                    return;
 
                 case FacingMode.AutoFaceTarget:
                     actor.FaceTowards(target.Position);
@@ -136,8 +129,20 @@ namespace Scripts
                 case FacingMode.LockCurrentFacing:
                     return;
 
+                case FacingMode.FaceTargetOnStartOnly:
+                    if (actor.TryConsumeStartFacing())
+                    {
+                        actor.FaceTowards(target.Position);
+                    }
+                    return;
+
                 case FacingMode.UseActorDefault:
                 default:
+                    if (!actor.IsMoveRunning && actor.HasMoveVisual)
+                    {
+                        return;
+                    }
+
                     if (actor.IsMoveRunning && actor.IsReadyForExchange)
                     {
                         return;
@@ -149,7 +154,7 @@ namespace Scripts
         }
         // 추가한거
 
-        // 돌진 만들어본거 (안써도됨)
+        // 돌진 만들어본거
         private void ApplyMovement(float deltaTime)
         {
             if (actorA == null || actorB == null || deltaTime <= 0f)
@@ -251,7 +256,7 @@ namespace Scripts
             float moveAmount = Mathf.Min(speed * deltaTime, remaining);
             actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
         }
-        // 돌진 만들어본거 (안써도됨)
+        // 돌진 만들어본거
 
         public void TryStartActors()
         {

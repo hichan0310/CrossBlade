@@ -246,6 +246,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Attack
+  category: 0
   weaponCollider: {fileID: 5161073269282670933}
   weaponHitboxes:
   - {fileID: 3065647985541362149}
@@ -253,8 +254,6 @@ MonoBehaviour:
   duration: 0.3
   knockbackResistance: 0
   stanceDamageResistance: 0
-  chaseMaxLength: 0
-  chaseDuration: 0
   hitMove: {fileID: 6858759112779511426, guid: 4030d37d891ad30fbba24205847de33a, type: 3}
   guardMove: {fileID: 2602544448145009053, guid: 736770d66de59dbd68ebde8fb0ee7efe, type: 3}
   after:
@@ -262,7 +261,7 @@ MonoBehaviour:
   - {fileID: 4438537263650161847, guid: c0a18d6159da3bd88ba2326c04377005, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
-  facingMode: 0
+  facingMode: 3
   startupApproachSpeed: 0
   activeApproachSpeed: 40
   approachStopDistance: 1.5

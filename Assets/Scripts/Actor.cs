@@ -130,9 +130,10 @@ namespace Scripts
         private QueuedMove _pendingQueuedMove;
         private int _pendingInputForce;
 
-        //돌진 만들어본거 (안써도됨)
+        //돌진 만들어본거
         private Vector2 _moveStartPosition;
-        //돌진 만들어본거 (안써도됨)
+        private bool _startFacingConsumed;
+        //돌진 만들어본거
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
@@ -159,7 +160,8 @@ namespace Scripts
 
         internal Vector2 MoveStartPosition => _moveStartPosition;
 
-        //돌진 만들어본거 (안써도됨)
+        //돌진 만들어본거
+        internal bool HasMoveVisual => _currentMoveInstance != null;
         internal int FacingSign
         {
             get
@@ -180,13 +182,24 @@ namespace Scripts
                 return sign >= 0f ? 1 : -1;
             }
         }
-        //돌진 만들어본거 (안써도됨)
+
+        internal bool TryConsumeStartFacing()
+        {
+            if (!_hasCurrent || _startFacingConsumed)
+            {
+                return false;
+            }
+
+            _startFacingConsumed = true;
+            return true;
+        }
+        //돌진 만들어본거
 
         // targetPosition의 x 위치를 기준으로 좌우 방향만 전환
         internal void FaceTowards(Vector2 targetPosition)
         {
             float deltaX = targetPosition.x - Position.x;
-            if (Mathf.Abs(deltaX) <= 0.001f)
+            if (Mathf.Abs(deltaX) <= 0.1f)
             {
                 return;
             }
@@ -209,16 +222,6 @@ namespace Scripts
 
             scale.x = absX * sign;
             root.localScale = scale;
-        }
-
-        internal void FaceDirection(int direction)
-        {
-            if (direction == 0)
-            {
-                return;
-            }
-
-            SetFacing(direction > 0 ? 1 : -1);
         }
 
         // 추가한거
@@ -488,9 +491,10 @@ namespace Scripts
             _hasCurrent = true;
             _currentMoveExchanged = false;
             _moveStartupRemaining = moveStartDelay;
-            //돌진 만들어본거 (안써도됨)
+            //돌진 만들어본거
             _moveStartPosition = Position;
-            //돌진 만들어본거 (안써도됨)
+            _startFacingConsumed = false;
+            //돌진 만들어본거
             queued.move = runtimeMove;
             queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
