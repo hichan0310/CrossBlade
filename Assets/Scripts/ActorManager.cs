@@ -31,6 +31,7 @@ namespace Scripts
         [Header("Actors")]
         public Actor actorA;
         public Actor actorB;
+        public CombatContext combatContext;
 
         [Header("Simulation")]
         public bool autoSimulate = true;
@@ -52,6 +53,14 @@ namespace Scripts
         // 프레임마다 stop 턴이 줄어드는 것을 막기 위한 게이트.
         private bool _consumedStopAInCurrentWindow;
         private bool _consumedStopBInCurrentWindow;
+
+        private void Start()
+        {
+            this.combatContext = new CombatContext()
+            {
+                user = actorA, target = actorB
+            };
+        }
 
         private void Update()
         {
@@ -98,7 +107,7 @@ namespace Scripts
             }
             else
             {
-                startedA = actorA.TryStartNextMove(SelectForce);
+                startedA = actorA.TryStartNextMove(SelectForce, this.combatContext);
             }
 
             if (ShouldBlockStartB())
@@ -107,7 +116,7 @@ namespace Scripts
             }
             else
             {
-                startedB = actorB.TryStartNextMove(SelectForce);
+                startedB = actorB.TryStartNextMove(SelectForce, this.combatContext);
             }
 
             // 상대가 새 Move를 시작하면 다음 정지 턴을 소비할 수 있게 윈도우를 리셋한다.
@@ -208,7 +217,7 @@ namespace Scripts
                 return false;
             }
 
-            actor.Interrupt(trigger, reason);
+            actor.Interrupt(trigger, reason, this.combatContext);
             return true;
         }
 
@@ -299,14 +308,14 @@ namespace Scripts
 
                 case ExchangeResult.ABlocksB:
                     DisableHitbox(exchange.hitboxA);
-                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard);
+                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
                     actorA.ApplyStanceDamage(Mathf.Max(1, context.targetStanceDamage));
                     break;
 
                 case ExchangeResult.BBlocksA:
                     DisableHitbox(exchange.hitboxB);
-                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard);
+                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
                     actorB.ApplyStanceDamage(Mathf.Max(1, context.userStanceDamage));
                     break;
@@ -314,14 +323,14 @@ namespace Scripts
                 case ExchangeResult.AHitsB:
                     DisableHitbox(exchange.hitboxA);
                     context.userHpDamage = Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
-                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit);
+                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
                     actorB.ApplyHpDamage(context.userHpDamage);
                     break;
 
                 case ExchangeResult.BHitsA:
                     DisableHitbox(exchange.hitboxB);
                     context.targetHpDamage = Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
-                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit);
+                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
                     actorA.ApplyHpDamage(context.targetHpDamage);
                     break;
             }

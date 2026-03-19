@@ -169,7 +169,7 @@ namespace Scripts
             _carriedForce = 0;
         }
 
-        internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector)
+        internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector, CombatContext combatContext)
         {
             if (_hasCurrent)
             {
@@ -202,7 +202,7 @@ namespace Scripts
                 inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
             }
 
-            return StartMove(queued, inputForce);
+            return StartMove(queued, inputForce, combatContext);
         }
 
         internal void Tick(float deltaTime)
@@ -229,7 +229,7 @@ namespace Scripts
             }
         }
 
-        internal void Interrupt(MoveEventType trigger, InterruptReason reason)
+        internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
         {
             if (!_hasCurrent)
             {
@@ -298,7 +298,7 @@ namespace Scripts
                 queued.forceCarryIn = interruptedQueuedMove.forceCarryOut;
             }
 
-            StartMove(queued, interrupted.selectedForce);
+            StartMove(queued, interrupted.selectedForce, combatContext);
         }
 
         internal void ApplyHpDamage(int amount)
@@ -371,7 +371,7 @@ namespace Scripts
             _recoilFriction = Mathf.Max(0f, friction);
         }
 
-        private bool StartMove(QueuedMove queued, int inputForce)
+        private bool StartMove(QueuedMove queued, int inputForce, CombatContext combatContext)
         {
             if (queued == null || queued.move == null)
             {
@@ -398,11 +398,6 @@ namespace Scripts
 
             queued.forceCarryIn = carriedForce;
 
-            CombatContext context = new CombatContext
-            {
-                user = this
-            };
-
             _currentMoveInstance = runtimeMove;
             currentMoveDebug = runtimeMove;
             _currentQueuedMove = queued;
@@ -412,7 +407,7 @@ namespace Scripts
             _moveStartupRemaining = moveStartDelay;
 
             queued.move = runtimeMove;
-            queued.Play(selectedForce, context, this.actorType);
+            queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
             GainSpecialForce(selectedForce);
