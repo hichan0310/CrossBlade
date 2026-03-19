@@ -151,10 +151,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d536e617b22459f8478b6dd54bc4ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
-  moveId: move
+  moveId: Hit
   category: 0
   weaponCollider: {fileID: 0}
   bodyCollider: {fileID: 7829855777853199063}
+  duration: 0.3
   knockbackResistance: 0
   stanceDamageResistance: 0
   hitMove: {fileID: 6858759112779511426}
@@ -164,3 +165,4 @@ MonoBehaviour:
   - {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
   guardable: 0
   skipAdditionalInterruptFollowUp: 0
+  facingMode: 0

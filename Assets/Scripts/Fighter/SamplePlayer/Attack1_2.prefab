@@ -245,7 +245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d536e617b22459f8478b6dd54bc4ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
-  moveId: move
+  moveId: Attack
   weaponCollider: {fileID: 5161073269282670933}
   weaponHitboxes:
   - {fileID: 3065647985541362149}
@@ -262,3 +262,4 @@ MonoBehaviour:
   - {fileID: 4438537263650161847, guid: c0a18d6159da3bd88ba2326c04377005, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
+  facingMode: 0

@@ -12,9 +12,31 @@ namespace Scripts
         Clash
     }
 
+    public enum MoveCategory
+    {
+        Neutral,
+        Attack,
+        Dash,
+        Guard,
+        HitReaction
+    }
+    
+    // 추가한거
+    public enum FacingMode
+    {
+        UseActorDefault,   
+        AutoFaceTarget,    
+        LockCurrentFacing, 
+        ForceFaceRight,    
+        ForceFaceLeft      
+    }
+    // 추가한거
+
     public class Move : MonoBehaviour
     {
-        [Header("Identity")] [SerializeField] private string moveId = "move";
+        [Header("Identity")]
+        [SerializeField] private string moveId = "move";
+        [SerializeField] private MoveCategory category = MoveCategory.Neutral;
 
         [Header("Runtime View")] [SerializeField, HideInInspector]
         private Collider2D weaponCollider;
@@ -32,12 +54,18 @@ namespace Scripts
         [SerializeField, Min(0)] private int chaseMaxLength;
         [SerializeField, ] private int chaseDuration;
 
-        [Header("Graph")] [SerializeField] private Move hitMove;
+        [Header("Graph")]
+        [SerializeField] private Move hitMove;
         [SerializeField] private Move guardMove;
         [SerializeField] private List<Move> after = new List<Move>();
         [SerializeField] private bool guardable = true;
         [SerializeField] private bool skipAdditionalInterruptFollowUp;
+        // 추가한거
+        [Header("Facing")]
+        [SerializeField] private FacingMode facingMode = FacingMode.UseActorDefault;
 
+        internal FacingMode FacingMode => facingMode;
+        // 추가한거
         internal string MoveId => moveId;
         internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
@@ -57,17 +85,6 @@ namespace Scripts
 
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
-            var length = combatContext.user.transform.position.x - combatContext.target.transform.position.x;
-            var scale = length < 0 ? 1 : -1;
-            if (actorType == ActorType.Enemy)
-            {
-                combatContext.target.transform.localScale = new Vector3(-scale, 1, 1);
-            }
-            else if (actorType == ActorType.Player)
-            {
-                combatContext.user.transform.position = new Vector3(scale, 1, 1);
-            }
-
             carryOut = 0;
         }
 

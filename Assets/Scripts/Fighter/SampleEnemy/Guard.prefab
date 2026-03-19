@@ -105,7 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d536e617b22459f8478b6dd54bc4ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
-  moveId: move
+  moveId: Guard
   category: 0
   weaponCollider: {fileID: 0}
   bodyCollider: {fileID: 290011102922610807}
@@ -119,6 +119,7 @@ MonoBehaviour:
   - {fileID: 6177890668136298235, guid: 40f0555285334d262820705ff1a4d3a3, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
+  facingMode: 0
 --- !u!61 &290011102922610807
 BoxCollider2D:
   m_ObjectHideFlags: 0
