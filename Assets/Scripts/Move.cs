@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 
 namespace Scripts
@@ -56,15 +57,17 @@ namespace Scripts
         [SerializeField] private string moveId = "move";
         [SerializeField] private MoveCategory category = MoveCategory.Neutral;
 
-        [Header("Runtime View")]
-        [SerializeField] private Collider2D weaponCollider;
-        [SerializeField] private Collider2D bodyCollider;
-        public bool hasWeaponCollider => weaponCollider!=null;
+        [Header("Runtime View")] [SerializeField, HideInInspector]
+        private Collider2D weaponCollider;
 
-        [Header("Timing")]
+        [SerializeField] private List<Hitbox> weaponHitboxes = new List<Hitbox>();
+        [SerializeField] private Collider2D bodyCollider;
+        public bool hasWeaponCollider => weaponHitboxes.Count > 0;
+
+        [Header("Timing")] 
         [SerializeField, Min(0.01f)] private float duration = 0.30f;
 
-        [Header("Combat")]
+        [Header("Combat")] 
         [SerializeField, Min(0f)] private float knockbackResistance;
         [SerializeField, Min(0)] private int stanceDamageResistance;
 
@@ -107,8 +110,7 @@ namespace Scripts
         internal float FixedTravelDistance => fixedTravelDistance;
         // 돌진 만들어본거 (안써도됨)
         internal string MoveId => moveId;
-        internal MoveCategory Category => category;
-        internal Collider2D WeaponCollider => weaponCollider;
+        internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
         internal float KnockbackResistance => knockbackResistance;
         internal int StanceDamageResistance => stanceDamageResistance;
@@ -123,9 +125,50 @@ namespace Scripts
         internal virtual int StanceCost => 0;
         internal virtual int StanceRecovery => 0;
 
-        internal virtual void Play(CombatContext combatContext, int force, out int carryOut)
+
+        internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
             carryOut = 0;
+        }
+
+        private void Reset()
+        {
+            CacheHitboxes();
+        }
+
+        private void OnValidate()
+        {
+            CacheHitboxes();
+        }
+
+        private void CacheHitboxes()
+        {
+            weaponHitboxes.RemoveAll(hitbox => hitbox == null);
+
+            if (weaponHitboxes.Count == 0 && weaponCollider != null)
+            {
+                Hitbox legacyHitbox = weaponCollider.GetComponent<Hitbox>();
+                if (legacyHitbox != null)
+                {
+                    weaponHitboxes.Add(legacyHitbox);
+                }
+            }
+
+            if (weaponHitboxes.Count > 0)
+            {
+                return;
+            }
+
+            Hitbox[] hitboxes = GetComponentsInChildren<Hitbox>(true);
+            for (int i = 0; i < hitboxes.Length; i++)
+            {
+                if (hitboxes[i] == null)
+                {
+                    continue;
+                }
+
+                weaponHitboxes.Add(hitboxes[i]);
+            }
         }
     }
 }

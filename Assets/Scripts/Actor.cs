@@ -12,6 +12,11 @@ namespace Scripts
         Forced
     }
 
+    public enum ActorType
+    {
+        Player, Enemy
+    }
+
     [Serializable]
     public class QueuedMove
     {
@@ -21,9 +26,9 @@ namespace Scripts
         public int forceCarryOut => carryOut;
         public int forceCarryIn { set { carryIn = value; } }
 
-        public void Play(int inputForce, CombatContext combatContext)
+        public void Play(int inputForce, CombatContext combatContext, ActorType actorType)
         {
-            this.move.Play(combatContext, carryIn + inputForce, out carryOut);
+            this.move.Play(actorType, combatContext, carryIn + inputForce, out carryOut);
         }
     }
 
@@ -71,6 +76,8 @@ namespace Scripts
 
     public class Actor : MonoBehaviour
     {
+        [SerializeField] private ActorType actorType;
+        
         [Header("Identity")]
         [SerializeField] private string actorId = "actor";
 
@@ -137,7 +144,7 @@ namespace Scripts
         internal float ChainMultiplier => Mathf.Min(1f + (_chainCount * chainStepBonus), chainMaxMultiplier);
         internal float KnockbackResistance => knockbackResistance + (_currentMoveInstance != null ? _currentMoveInstance.KnockbackResistance : 0f);
         internal int SpecialForce => specialForce;
-        internal Collider2D weaponCollider => _currentMoveInstance != null ? _currentMoveInstance.WeaponCollider : null;
+        internal IList<Hitbox> weaponHitboxes => _currentMoveInstance != null ? _currentMoveInstance.WeaponHitboxes : Array.Empty<Hitbox>();
         internal Collider2D bodyCollider => _currentMoveInstance != null ? _currentMoveInstance.BodyCollider : null;
         // 추가한거
         internal string ActorId => actorId;
@@ -245,7 +252,7 @@ namespace Scripts
             _carriedForce = 0;
         }
 
-        internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector)
+        internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector, CombatContext combatContext)
         {
             if (_hasCurrent)
             {
@@ -278,7 +285,7 @@ namespace Scripts
                 inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
             }
 
-            return StartMove(queued, inputForce);
+            return StartMove(queued, inputForce, combatContext);
         }
 
         internal void Tick(float deltaTime)
@@ -305,7 +312,7 @@ namespace Scripts
             }
         }
 
-        internal void Interrupt(MoveEventType trigger, InterruptReason reason)
+        internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
         {
             if (!_hasCurrent)
             {
@@ -374,7 +381,7 @@ namespace Scripts
                 queued.forceCarryIn = interruptedQueuedMove.forceCarryOut;
             }
 
-            StartMove(queued, interrupted.selectedForce);
+            StartMove(queued, interrupted.selectedForce, combatContext);
         }
 
         internal void ApplyHpDamage(int amount)
@@ -447,7 +454,7 @@ namespace Scripts
             _recoilFriction = Mathf.Max(0f, friction);
         }
 
-        private bool StartMove(QueuedMove queued, int inputForce)
+        private bool StartMove(QueuedMove queued, int inputForce, CombatContext combatContext)
         {
             if (queued == null || queued.move == null)
             {
@@ -474,11 +481,6 @@ namespace Scripts
 
             queued.forceCarryIn = carriedForce;
 
-            CombatContext context = new CombatContext
-            {
-                user = this
-            };
-
             _currentMoveInstance = runtimeMove;
             currentMoveDebug = runtimeMove;
             _currentQueuedMove = queued;
@@ -490,7 +492,7 @@ namespace Scripts
             _moveStartPosition = Position;
             //돌진 만들어본거 (안써도됨)
             queued.move = runtimeMove;
-            queued.Play(selectedForce, context);
+            queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
             GainSpecialForce(selectedForce);

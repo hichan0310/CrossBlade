@@ -15,6 +15,13 @@ namespace Scripts
 
     public class ActorManager : MonoBehaviour
     {
+        private struct ExchangeInfo
+        {
+            public ExchangeResult result;
+            public Hitbox hitboxA;
+            public Hitbox hitboxB;
+        }
+
         private struct KnockbackSpeeds
         {
             public float speedA;
@@ -24,6 +31,7 @@ namespace Scripts
         [Header("Actors")]
         public Actor actorA;
         public Actor actorB;
+        public CombatContext combatContext;
 
         [Header("Simulation")]
         public bool autoSimulate = true;
@@ -45,6 +53,14 @@ namespace Scripts
         // 프레임마다 stop 턴이 줄어드는 것을 막기 위한 게이트.
         private bool _consumedStopAInCurrentWindow;
         private bool _consumedStopBInCurrentWindow;
+
+        private void Start()
+        {
+            this.combatContext = new CombatContext()
+            {
+                user = actorA, target = actorB
+            };
+        }
 
         private void Update()
         {
@@ -69,15 +85,14 @@ namespace Scripts
             actorB.Tick(deltaTime);
 
             if (actorA.IsMoveRunning && actorB.IsMoveRunning
-                && actorA.IsReadyForExchange && actorB.IsReadyForExchange
-                && !actorA.HasResolvedExchange && !actorB.HasResolvedExchange)
+                && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
             {
-                ExchangeResult result = ResolveExchange(actorA, actorB);
-                if(result==ExchangeResult.ABlocksB || result == ExchangeResult.BBlocksA || actorA.Current.move.hasWeaponCollider || actorB.Current.move.hasWeaponCollider)
+                ExchangeInfo exchange = ResolveExchange(actorA, actorB);
+                if (exchange.result == ExchangeResult.ABlocksB || exchange.result == ExchangeResult.BBlocksA || exchange.result == ExchangeResult.AHitsB || exchange.result == ExchangeResult.BHitsA || exchange.result == ExchangeResult.Clash)
                 {
-                    Debug.Log(result);
+                    Debug.Log(exchange.result);
                 }
-                ApplyExchange(result);
+                ApplyExchange(exchange);
             }
         }
 
@@ -254,7 +269,7 @@ namespace Scripts
             }
             else
             {
-                startedA = actorA.TryStartNextMove(SelectForce);
+                startedA = actorA.TryStartNextMove(SelectForce, this.combatContext);
             }
 
             if (ShouldBlockStartB())
@@ -263,7 +278,7 @@ namespace Scripts
             }
             else
             {
-                startedB = actorB.TryStartNextMove(SelectForce);
+                startedB = actorB.TryStartNextMove(SelectForce, this.combatContext);
             }
 
             // 상대가 새 Move를 시작하면 다음 정지 턴을 소비할 수 있게 윈도우를 리셋한다.
@@ -364,7 +379,7 @@ namespace Scripts
                 return false;
             }
 
-            actor.Interrupt(trigger, reason);
+            actor.Interrupt(trigger, reason, this.combatContext);
             return true;
         }
 
@@ -373,44 +388,61 @@ namespace Scripts
             return defaultForce;
         }
 
-        private ExchangeResult ResolveExchange(Actor a, Actor b)
+        private ExchangeInfo ResolveExchange(Actor a, Actor b)
         {
-            bool weaponWeapon = Touching(a.weaponCollider, b.weaponCollider);
-            if (weaponWeapon)
+            if (TryGetWeaponWeaponTouch(a, b, out Hitbox aClashHitbox, out Hitbox bClashHitbox))
             {
-                return ExchangeResult.Clash;
+                return new ExchangeInfo
+                {
+                    result = ExchangeResult.Clash,
+                    hitboxA = aClashHitbox,
+                    hitboxB = bClashHitbox
+                };
             }
 
-            bool aWeaponBBody = Touching(a.weaponCollider, b.bodyCollider);
-            bool bWeaponABody = Touching(b.weaponCollider, a.bodyCollider);
+            bool aWeaponBBody = TryGetWeaponBodyTouch(a.weaponHitboxes, b.bodyCollider, out Hitbox aBodyHitbox);
+            bool bWeaponABody = TryGetWeaponBodyTouch(b.weaponHitboxes, a.bodyCollider, out Hitbox bBodyHitbox);
 
             if (aWeaponBBody && bWeaponABody)
             {
-                return ExchangeResult.Clash;
+                return new ExchangeInfo
+                {
+                    result = ExchangeResult.Clash,
+                    hitboxA = aBodyHitbox,
+                    hitboxB = bBodyHitbox
+                };
             }
 
             if (aWeaponBBody)
             {
-                return b.CanGuard ? ExchangeResult.ABlocksB : ExchangeResult.AHitsB;
+                return new ExchangeInfo
+                {
+                    result = b.CanGuard ? ExchangeResult.ABlocksB : ExchangeResult.AHitsB,
+                    hitboxA = aBodyHitbox
+                };
             }
 
             if (bWeaponABody)
             {
-                return a.CanGuard ? ExchangeResult.BBlocksA : ExchangeResult.BHitsA;
+                return new ExchangeInfo
+                {
+                    result = a.CanGuard ? ExchangeResult.BBlocksA : ExchangeResult.BHitsA,
+                    hitboxB = bBodyHitbox
+                };
             }
 
-            return ExchangeResult.None;
+            return new ExchangeInfo
+            {
+                result = ExchangeResult.None
+            };
         }
 
-        private void ApplyExchange(ExchangeResult result)
+        private void ApplyExchange(ExchangeInfo exchange)
         {
-            if (result == ExchangeResult.None)
+            if (exchange.result == ExchangeResult.None)
             {
                 return;
             }
-
-            actorA.MarkCurrentMoveExchanged();
-            actorB.MarkCurrentMoveExchanged();
 
             MoveRuntime aState = actorA.Current;
             MoveRuntime bState = actorB.Current;
@@ -420,41 +452,47 @@ namespace Scripts
                 user = actorA,
                 target = actorB,
                 manager = this,
-                exchangeResult = result,
+                exchangeResult = exchange.result,
                 userStanceDamage = aState.move != null ? aState.move.StanceDamage : 0,
                 targetStanceDamage = bState.move != null ? bState.move.StanceDamage : 0,
-                userHpDamage = aState.move != null ? Mathf.RoundToInt(aState.move.Damage * actorA.ChainMultiplier) : 0,
-                targetHpDamage = bState.move != null ? Mathf.RoundToInt(bState.move.Damage * actorB.ChainMultiplier) : 0
+                userHpDamage = exchange.hitboxA != null ? Mathf.RoundToInt(exchange.hitboxA.trueDamage * actorA.ChainMultiplier) : 0,
+                targetHpDamage = exchange.hitboxB != null ? Mathf.RoundToInt(exchange.hitboxB.trueDamage * actorB.ChainMultiplier) : 0
             };
 
-            switch (result)
+            switch (exchange.result)
             {
                 case ExchangeResult.Clash:
+                    DisableHitbox(exchange.hitboxA);
+                    DisableHitbox(exchange.hitboxB);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
                     break;
 
                 case ExchangeResult.ABlocksB:
-                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard);
+                    DisableHitbox(exchange.hitboxA);
+                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
                     actorA.ApplyStanceDamage(Mathf.Max(1, context.targetStanceDamage));
                     break;
 
                 case ExchangeResult.BBlocksA:
-                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard);
+                    DisableHitbox(exchange.hitboxB);
+                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
                     actorB.ApplyStanceDamage(Mathf.Max(1, context.userStanceDamage));
                     break;
 
                 case ExchangeResult.AHitsB:
+                    DisableHitbox(exchange.hitboxA);
                     context.userHpDamage = Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
-                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit);
+                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
                     actorB.ApplyHpDamage(context.userHpDamage);
                     break;
 
                 case ExchangeResult.BHitsA:
+                    DisableHitbox(exchange.hitboxB);
                     context.targetHpDamage = Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
-                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit);
+                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
                     actorA.ApplyHpDamage(context.targetHpDamage);
                     break;
             }
@@ -471,6 +509,69 @@ namespace Scripts
             }
 
             return lhs.IsTouching(rhs);
+        }
+
+        private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body, out Hitbox touchingHitbox)
+        {
+            touchingHitbox = null;
+            if (body == null || hitboxes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < hitboxes.Count; i++)
+            {
+                Hitbox hitbox = hitboxes[i];
+                if (hitbox == null || !Touching(hitbox.Collider, body))
+                {
+                    continue;
+                }
+
+                touchingHitbox = hitbox;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetWeaponWeaponTouch(Actor a, Actor b, out Hitbox aHitbox, out Hitbox bHitbox)
+        {
+            aHitbox = null;
+            bHitbox = null;
+
+            for (int i = 0; i < a.weaponHitboxes.Count; i++)
+            {
+                Hitbox left = a.weaponHitboxes[i];
+                if (left == null || left.Collider == null || !left.Collider.enabled)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < b.weaponHitboxes.Count; j++)
+                {
+                    Hitbox right = b.weaponHitboxes[j];
+                    if (right == null || !Touching(left.Collider, right.Collider))
+                    {
+                        continue;
+                    }
+
+                    aHitbox = left;
+                    bHitbox = right;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void DisableHitbox(Hitbox hitbox)
+        {
+            if (hitbox == null || hitbox.Collider == null)
+            {
+                return;
+            }
+
+            hitbox.Collider.enabled = false;
         }
 
         private bool ShouldBlockStartA()

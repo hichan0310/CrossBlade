@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5782102978640585896}
   - component: {fileID: 2281021641308730781}
+  - component: {fileID: 6095507457630073204}
   m_Layer: 0
   m_Name: Slash
   m_TagString: Untagged
@@ -78,6 +79,20 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.75, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &6095507457630073204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1461253984974385070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 810aadc07325bdf6eb8ed9ba7bd26ee4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.Hitbox
+  hitboxCollider: {fileID: 2281021641308730781}
+  baseTrueDamage: 0
 --- !u!1 &8125855545336471893
 GameObject:
   m_ObjectHideFlags: 0
@@ -185,12 +200,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Attack
-  category: 0
   weaponCollider: {fileID: 2281021641308730781}
+  weaponHitboxes:
+  - {fileID: 6095507457630073204}
   bodyCollider: {fileID: 3776050730826727912}
   duration: 0.3
   knockbackResistance: 2
   stanceDamageResistance: 0
+  chaseMaxLength: 0
+  chaseDuration: 0
   hitMove: {fileID: 4863790163555513521, guid: 688df75aaf5cf5d82acd2cf66da4d0f3, type: 3}
   guardMove: {fileID: 6141492211270888958, guid: df940867274b6f3a3a8bdf6246244e8a, type: 3}
   after:
