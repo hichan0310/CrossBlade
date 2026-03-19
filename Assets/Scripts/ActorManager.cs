@@ -62,7 +62,9 @@ namespace Scripts
             // 추가한거
             UpdateFacing();
             // 추가한거
-
+            //돌진 만들어본거 (안써도됨)
+            ApplyMovement(deltaTime);
+            //돌진 만들어본거 (안써도됨)
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
 
@@ -131,6 +133,110 @@ namespace Scripts
             }
         }
         // 추가한거
+
+        // 돌진 만들어본거 (안써도됨)
+        private void ApplyMovement(float deltaTime)
+        {
+            if (actorA == null || actorB == null || deltaTime <= 0f)
+            {
+                return;
+            }
+
+            ApplyMovement(actorA, actorB, deltaTime);
+            ApplyMovement(actorB, actorA, deltaTime);
+        }
+
+        private static void ApplyMovement(Actor actor, Actor target, float deltaTime)
+        {
+            if (actor == null || target == null || !actor.IsMoveRunning)
+            {
+                return;
+            }
+
+            Move move = actor.Current.move;
+            if (move == null)
+            {
+                return;
+            }
+
+            float speed = GetMovementSpeed(actor, move);
+            if (speed <= 0f)
+            {
+                return;
+            }
+
+            switch (move.MovementMode)
+            {
+                case MovementMode.None:
+                    return;
+
+                case MovementMode.StopAtRange:
+                    MoveTowardRange(actor, target, move.StopDistance, speed, deltaTime);
+                    return;
+
+                case MovementMode.PassThroughTarget:
+                {
+                    float targetX = target.Position.x + (actor.FacingSign * move.PassThroughOffset);
+                    MoveTowardX(actor, targetX, speed, deltaTime);
+                    return;
+                }
+
+                case MovementMode.FixedDistanceForward:
+                {
+                    float targetX = actor.MoveStartPosition.x + (actor.FacingSign * move.FixedTravelDistance);
+                    MoveTowardX(actor, targetX, speed, deltaTime);
+                    return;
+                }
+            }
+        }
+
+        private static float GetMovementSpeed(Actor actor, Move move)
+        {
+            bool isStartup = actor.IsMoveRunning && !actor.IsReadyForExchange;
+            bool isActive = actor.IsMoveRunning && actor.IsReadyForExchange;
+
+            if (isStartup)
+            {
+                return move.StartupMoveSpeed;
+            }
+
+            if (isActive)
+            {
+                return move.ActiveMoveSpeed;
+            }
+
+            return 0f;
+        }
+
+        private static void MoveTowardRange(Actor actor, Actor target, float stopDistance, float speed, float deltaTime)
+        {
+            float deltaX = target.Position.x - actor.Position.x;
+            float distanceX = Mathf.Abs(deltaX);
+            float remaining = distanceX - stopDistance;
+
+            if (remaining <= 0f)
+            {
+                return;
+            }
+
+            float moveAmount = Mathf.Min(speed * deltaTime, remaining);
+            actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
+        }
+
+        private static void MoveTowardX(Actor actor, float targetX, float speed, float deltaTime)
+        {
+            float deltaX = targetX - actor.Position.x;
+            float remaining = Mathf.Abs(deltaX);
+
+            if (remaining <= 0.001f)
+            {
+                return;
+            }
+
+            float moveAmount = Mathf.Min(speed * deltaTime, remaining);
+            actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
+        }
+        // 돌진 만들어본거 (안써도됨)
 
         public void TryStartActors()
         {

@@ -19,7 +19,7 @@ namespace Scripts
         Guard,
         HitReaction
     }
-    
+
     // 추가한거
     public enum FacingMode
     {
@@ -30,6 +30,25 @@ namespace Scripts
         ForceFaceLeft      
     }
     // 추가한거
+
+
+    //돌진 만들어본거 (안써도됨)
+    public enum ApproachPhase
+    {
+        None,
+        StartupOnly,
+        ActiveOnly,
+        StartupAndActive
+    }
+
+    public enum MovementMode
+    {
+        None,
+        StopAtRange,
+        PassThroughTarget,
+        FixedDistanceForward
+    }
+    // 돌진 만들어본거 (안써도됨)
 
     public class Move : MonoBehaviour
     {
@@ -61,6 +80,32 @@ namespace Scripts
 
         internal FacingMode FacingMode => facingMode;
         // 추가한거
+
+        //돌진 만들어본거 (안써도됨)
+        [Header("Approach")]
+        [SerializeField, Min(0f)] private float startupApproachSpeed = 0f;
+        [SerializeField, Min(0f)] private float activeApproachSpeed = 0f;
+        [SerializeField, Min(0f)] private float approachStopDistance = 1.0f;
+
+        internal float StartupApproachSpeed => startupApproachSpeed;
+        internal float ActiveApproachSpeed => activeApproachSpeed;
+        internal float ApproachStopDistance => approachStopDistance;
+
+        [Header("Movement")]
+        [SerializeField] private MovementMode movementMode = MovementMode.None;
+        [SerializeField, Min(0f)] private float startupMoveSpeed = 0f;
+        [SerializeField, Min(0f)] private float activeMoveSpeed = 0f;
+        [SerializeField, Min(0f)] private float stopDistance = 1.0f;
+        [SerializeField, Min(0f)] private float passThroughOffset = 0.5f;
+        [SerializeField, Min(0f)] private float fixedTravelDistance = 1.5f;
+
+        internal MovementMode MovementMode => movementMode;
+        internal float StartupMoveSpeed => startupMoveSpeed;
+        internal float ActiveMoveSpeed => activeMoveSpeed;
+        internal float StopDistance => stopDistance;
+        internal float PassThroughOffset => passThroughOffset;
+        internal float FixedTravelDistance => fixedTravelDistance;
+        // 돌진 만들어본거 (안써도됨)
         internal string MoveId => moveId;
         internal MoveCategory Category => category;
         internal Collider2D WeaponCollider => weaponCollider;
