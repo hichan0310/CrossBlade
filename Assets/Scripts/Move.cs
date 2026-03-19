@@ -27,20 +27,12 @@ namespace Scripts
         UseActorDefault,   
         AutoFaceTarget,    
         LockCurrentFacing, 
-        ForceFaceRight,    
-        ForceFaceLeft      
+        FaceTargetOnStartOnly  
     }
     // 추가한거
 
 
-    //돌진 만들어본거 (안써도됨)
-    public enum ApproachPhase
-    {
-        None,
-        StartupOnly,
-        ActiveOnly,
-        StartupAndActive
-    }
+    //돌진 만들어본거
 
     public enum MovementMode
     {
@@ -49,7 +41,7 @@ namespace Scripts
         PassThroughTarget,
         FixedDistanceForward
     }
-    // 돌진 만들어본거 (안써도됨)
+    // 돌진 만들어본거
 
     public class Move : MonoBehaviour
     {
@@ -84,15 +76,7 @@ namespace Scripts
         internal FacingMode FacingMode => facingMode;
         // 추가한거
 
-        //돌진 만들어본거 (안써도됨)
-        [Header("Approach")]
-        [SerializeField, Min(0f)] private float startupApproachSpeed = 0f;
-        [SerializeField, Min(0f)] private float activeApproachSpeed = 0f;
-        [SerializeField, Min(0f)] private float approachStopDistance = 1.0f;
-
-        internal float StartupApproachSpeed => startupApproachSpeed;
-        internal float ActiveApproachSpeed => activeApproachSpeed;
-        internal float ApproachStopDistance => approachStopDistance;
+        //돌진 만들어본거
 
         [Header("Movement")]
         [SerializeField] private MovementMode movementMode = MovementMode.None;
@@ -108,7 +92,7 @@ namespace Scripts
         internal float StopDistance => stopDistance;
         internal float PassThroughOffset => passThroughOffset;
         internal float FixedTravelDistance => fixedTravelDistance;
-        // 돌진 만들어본거 (안써도됨)
+        // 돌진 만들어본거
         internal string MoveId => moveId;
         internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
