@@ -151,7 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d536e617b22459f8478b6dd54bc4ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
-  moveId: move
+  moveId: Attack
   category: 0
   weaponCollider: {fileID: 0}
   bodyCollider: {fileID: 104072810625995824}
