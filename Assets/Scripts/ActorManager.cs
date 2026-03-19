@@ -59,6 +59,9 @@ namespace Scripts
         public void Simulate(float deltaTime)
         {
             TryStartActors();
+            // 추가한거
+            UpdateFacing();
+            // 추가한거
 
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
@@ -75,6 +78,59 @@ namespace Scripts
                 ApplyExchange(result);
             }
         }
+
+        // 추가한거
+        // 방향 전환
+        private void UpdateFacing()
+        {
+            if (actorA == null || actorB == null)
+            {
+                return;
+            }
+
+            UpdateFacing(actorA, actorB);
+            UpdateFacing(actorB, actorA);
+        }
+
+        private static void UpdateFacing(Actor actor, Actor target)
+        {
+            if (actor == null || target == null)
+            {
+                return;
+            }
+
+            Move currentMove = actor.IsMoveRunning ? actor.Current.move : null;
+            FacingMode mode = currentMove != null ? currentMove.FacingMode : FacingMode.UseActorDefault;
+
+            switch (mode)
+            {
+                case FacingMode.ForceFaceRight:
+                    actor.FaceDirection(1);
+                    return;
+
+                case FacingMode.ForceFaceLeft:
+                    actor.FaceDirection(-1);
+                    return;
+
+                case FacingMode.AutoFaceTarget:
+                    actor.FaceTowards(target.Position);
+                    return;
+
+                case FacingMode.LockCurrentFacing:
+                    return;
+
+                case FacingMode.UseActorDefault:
+                default:
+                    if (actor.IsMoveRunning && actor.IsReadyForExchange)
+                    {
+                        return;
+                    }
+
+                    actor.FaceTowards(target.Position);
+                    return;
+            }
+        }
+        // 추가한거
 
         public void TryStartActors()
         {

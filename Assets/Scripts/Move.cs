@@ -19,6 +19,17 @@ namespace Scripts
         Guard,
         HitReaction
     }
+    
+    // 추가한거
+    public enum FacingMode
+    {
+        UseActorDefault,   
+        AutoFaceTarget,    
+        LockCurrentFacing, 
+        ForceFaceRight,    
+        ForceFaceLeft      
+    }
+    // 추가한거
 
     public class Move : MonoBehaviour
     {
@@ -44,7 +55,12 @@ namespace Scripts
         [SerializeField] private List<Move> after = new List<Move>();
         [SerializeField] private bool guardable = true;
         [SerializeField] private bool skipAdditionalInterruptFollowUp;
+        // 추가한거
+        [Header("Facing")]
+        [SerializeField] private FacingMode facingMode = FacingMode.UseActorDefault;
 
+        internal FacingMode FacingMode => facingMode;
+        // 추가한거
         internal string MoveId => moveId;
         internal MoveCategory Category => category;
         internal Collider2D WeaponCollider => weaponCollider;
