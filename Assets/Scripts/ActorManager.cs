@@ -502,6 +502,16 @@ namespace Scripts
             switch (exchange.result)
             {
                 case ExchangeResult.Clash:
+                    if (aState.move != null)
+                    {
+                        aState.move.OnClash(actorA, this.combatContext);
+                    }
+
+                    if (bState.move != null)
+                    {
+                        bState.move.OnClash(actorB, this.combatContext);
+                    }
+
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);

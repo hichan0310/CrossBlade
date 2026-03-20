@@ -125,8 +125,6 @@ namespace Scripts
         private float _recoilFriction;
         private float _nextAttackDamageMultiplier = 1f;
         private int _carriedForce;
-        private MoveEventType? _forcedFollowUpTrigger;
-        private int _forcedFollowUpRemaining;
         private Move _currentMoveInstance;
         // private Move _lingeringMoveInstance;
         private bool _currentMoveExchanged;
@@ -308,6 +306,26 @@ namespace Scripts
             _queue.Enqueue(new QueuedMove { move = move });
         }
 
+        internal void ClearQueuedMovesForInterrupt()
+        {
+            ClearQueue();
+            _pendingQueuedMove = null;
+            _pendingInputForce = 0;
+        }
+
+        internal void EnqueueInterruptFollowUps(Move move, int count)
+        {
+            if (move == null || count <= 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                _queue.Enqueue(new QueuedMove { move = move });
+            }
+        }
+
         private void ClearQueue()
         {
             _queue.Clear();
@@ -387,24 +405,6 @@ namespace Scripts
             QueuedMove interruptedQueuedMove = _currentQueuedMove;
             Move interruptedSourceMove = interruptedQueuedMove != null ? interruptedQueuedMove.move : interrupted.move;
             Move next = null;
-            if (interruptedSourceMove != null)
-            {
-                switch (trigger)
-                {
-                    case MoveEventType.Hit:
-                        next = interruptedSourceMove.HitMove;
-                        break;
-                    case MoveEventType.Guard:
-                        next = interruptedSourceMove.GuardMove;
-                        break;
-                    case MoveEventType.NormalEnd:
-                        if (interruptedSourceMove.After.Count > 0)
-                        {
-                            next = interruptedSourceMove.After[0];
-                        }
-                        break;
-                }
-            }
 
             _hasCurrent = false;
             _currentQueuedMove = null;
@@ -419,19 +419,16 @@ namespace Scripts
             MoveInterrupted?.Invoke(this, interrupted, reason);
 
             _chainCount = 0;
-            _forcedFollowUpTrigger = null;
-            _forcedFollowUpRemaining = 0;
 
-            if (reason == InterruptReason.Hit)
+            switch (trigger)
             {
-                ClearQueue();
-                _forcedFollowUpTrigger = MoveEventType.Hit;
-                _forcedFollowUpRemaining = 1;
-            }
-            else if (reason == InterruptReason.Guard)
-            {
-                _forcedFollowUpTrigger = MoveEventType.Guard;
-                _forcedFollowUpRemaining = 2;
+                case MoveEventType.Hit:
+                    next = interruptedSourceMove != null ? interruptedSourceMove.OnHit(this, combatContext) : null;
+                    break;
+
+                case MoveEventType.Guard:
+                    next = interruptedSourceMove != null ? interruptedSourceMove.OnGuard(this, combatContext) : null;
+                    break;
             }
 
             if (next == null)
@@ -634,43 +631,6 @@ namespace Scripts
 
             MoveFinished?.Invoke(this, finished);
 
-            if (_forcedFollowUpRemaining > 0)
-            {
-                if (finishedSourceMove != null && finishedSourceMove.SkipAdditionalInterruptFollowUp)
-                {
-                    _forcedFollowUpTrigger = null;
-                    _forcedFollowUpRemaining = 0;
-                }
-                else if (_forcedFollowUpTrigger.HasValue && finishedSourceMove != null)
-                {
-                    Move forced = null;
-                    switch (_forcedFollowUpTrigger.Value)
-                    {
-                        case MoveEventType.Hit:
-                            forced = finishedSourceMove.HitMove;
-                            break;
-                        case MoveEventType.Guard:
-                            forced = finishedSourceMove.GuardMove;
-                            break;
-                    }
-
-                    _forcedFollowUpRemaining--;
-                    if (_forcedFollowUpRemaining <= 0)
-                    {
-                        _forcedFollowUpTrigger = null;
-                    }
-
-                    if (forced != null)
-                    {
-                        QueuedMove forcedQueuedMove = new QueuedMove { move = forced };
-                        forcedQueuedMove.forceCarryIn = _carriedForce;
-                        _pendingQueuedMove = forcedQueuedMove;
-                        _pendingInputForce = finished.selectedForce;
-                        return;
-                    }
-                }
-            }
-
             if (_queue.Count > 0)
             {
                 _chainCount++;
@@ -681,7 +641,7 @@ namespace Scripts
                 _chainCount = 0;
             }
 
-            if (finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
+            if (_queue.Count > 0 || finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
             {
                 return;
             }
@@ -689,8 +649,7 @@ namespace Scripts
             int nextIndex = UnityEngine.Random.Range(0, finishedSourceMove.After.Count);
             QueuedMove autoQueuedMove = new QueuedMove { move = finishedSourceMove.After[nextIndex] };
             autoQueuedMove.forceCarryIn = _carriedForce;
-            _pendingQueuedMove = autoQueuedMove;
-            _pendingInputForce = finished.selectedForce;
+            _queue.Enqueue(autoQueuedMove);
         }
 
         internal void MoveBy(Vector2 delta)

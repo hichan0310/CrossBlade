@@ -125,6 +125,24 @@ namespace Scripts
             carryOut = 0;
         }
 
+        internal virtual Move OnHit(Actor actor, CombatContext combatContext)
+        {
+            actor.ClearQueuedMovesForInterrupt();
+            actor.EnqueueInterruptFollowUps(hitMove, 1);
+            return hitMove;
+        }
+
+        internal virtual Move OnGuard(Actor actor, CombatContext combatContext)
+        {
+            actor.ClearQueuedMovesForInterrupt();
+            actor.EnqueueInterruptFollowUps(guardMove, 2);
+            return guardMove;
+        }
+
+        internal virtual void OnClash(Actor actor, CombatContext combatContext)
+        {
+        }
+
         private void Reset()
         {
             CacheHitboxes();
