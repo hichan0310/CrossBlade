@@ -166,12 +166,12 @@ MonoBehaviour:
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
   facingMode: 1
-  movementMode: 4
+  movementMode: 3
   movementPhase: 1
-  speed: -5
+  speed: 0
   stopDistance: 0
   passThroughOffset: 0
-  fixedTravelDistance: 0
+  fixedTravelDistance: -2
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 7868491423263923891}

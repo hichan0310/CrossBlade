@@ -87,14 +87,14 @@ namespace Scripts
         [SerializeField, Min(0f)] private float passThroughOffset = 0f;
         [SerializeField,] private float fixedTravelDistance = 0f;
 
-        // [Header("Visual Timing")]
-        // [SerializeField] private bool delayVisualReveal = false;
-        // [SerializeField, Range(0f, 1f)] private float visualRevealProgress = 0f;
-        // [SerializeField] private Transform visualRoot;
+        [Header("Visual Timing")]
+        [SerializeField] private bool delayVisualReveal = false;
+        [SerializeField, Range(0f, 1f)] private float visualRevealProgress = 0f;
+        [SerializeField] private Transform visualRoot;
 
-        // internal bool DelayVisualReveal => delayVisualReveal;
-        // internal float VisualRevealProgress => visualRevealProgress;
-        // internal Transform VisualRoot => visualRoot;
+        internal bool DelayVisualReveal => delayVisualReveal;
+        internal float VisualRevealProgress => visualRevealProgress;
+        internal Transform VisualRoot => visualRoot;
 
         internal MovementMode MovementMode => movementMode;
         internal MovementPhase MovementPhase => movementPhase;

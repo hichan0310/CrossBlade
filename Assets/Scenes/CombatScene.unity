@@ -515,6 +515,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 195829950}
+  - component: {fileID: 195829951}
   m_Layer: 0
   m_Name: UIAnchor
   m_TagString: Untagged
@@ -539,6 +540,18 @@ Transform:
   - {fileID: 153426020}
   m_Father: {fileID: 1796795474}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!225 &195829951
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195829949}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &198602967
 GameObject:
   m_ObjectHideFlags: 0
@@ -3082,6 +3095,7 @@ MonoBehaviour:
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
   currentMoveDebug: {fileID: 0}
   moveStartDelay: 0.1
+  uiCanvasGroup: {fileID: 195829951}
 --- !u!4 &1796795474
 Transform:
   m_ObjectHideFlags: 0
@@ -3347,6 +3361,7 @@ MonoBehaviour:
   initialMove: {fileID: 4321802175857072457, guid: 922d1e15bc8e10eeba96020d842fe387, type: 3}
   currentMoveDebug: {fileID: 0}
   moveStartDelay: 0.1
+  uiCanvasGroup: {fileID: 0}
 --- !u!4 &2119092439
 Transform:
   m_ObjectHideFlags: 0
