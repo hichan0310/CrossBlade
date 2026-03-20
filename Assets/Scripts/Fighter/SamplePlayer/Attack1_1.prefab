@@ -154,6 +154,7 @@ MonoBehaviour:
   moveId: Attack
   category: 0
   weaponCollider: {fileID: 0}
+  weaponHitboxes: []
   bodyCollider: {fileID: 104072810625995824}
   duration: 0.3
   knockbackResistance: 0
@@ -164,13 +165,13 @@ MonoBehaviour:
   - {fileID: 8124817339130221205, guid: c98b3d67a8e72c273a12d067c8b8ef2b, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
-  facingMode: 0
-  startupApproachSpeed: 0
-  activeApproachSpeed: 0
-  approachStopDistance: 1.5
-  movementMode: 0
-  startupMoveSpeed: 0
-  activeMoveSpeed: 0
-  stopDistance: 1
-  passThroughOffset: 0.5
-  fixedTravelDistance: 1.5
+  facingMode: 1
+  movementMode: 4
+  movementPhase: 1
+  speed: -5
+  stopDistance: 0
+  passThroughOffset: 0
+  fixedTravelDistance: 0
+  delayVisualReveal: 0
+  visualRevealProgress: 0
+  visualRoot: {fileID: 7868491423263923891}

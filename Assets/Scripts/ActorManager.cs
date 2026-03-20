@@ -75,12 +75,12 @@ namespace Scripts
         public void Simulate(float deltaTime)
         {
             TryStartActors();
-            // 추가한거
+            
             UpdateFacing();
-            // 추가한거
-            //돌진 만들어본거
+            
+            
             ApplyMovement(deltaTime);
-            //돌진 만들어본거
+            
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
 
@@ -96,7 +96,7 @@ namespace Scripts
             }
         }
 
-        // 추가한거
+        
         // 방향 전환
         private void UpdateFacing()
         {
@@ -124,6 +124,10 @@ namespace Scripts
 
                 case FacingMode.AutoFaceTarget:
                     actor.FaceTowards(target.Position);
+                    if (actor.TryConsumeStartFacing())
+                    {
+                        actor.SyncMoveStartFacing();
+                    }
                     return;
 
                 case FacingMode.LockCurrentFacing:
@@ -133,6 +137,7 @@ namespace Scripts
                     if (actor.TryConsumeStartFacing())
                     {
                         actor.FaceTowards(target.Position);
+                        actor.SyncMoveStartFacing();
                     }
                     return;
 
@@ -152,9 +157,52 @@ namespace Scripts
                     return;
             }
         }
-        // 추가한거
+        
 
         // 돌진 만들어본거
+
+        private static bool ShouldMoveNow(Actor actor, Move move)
+        {
+            bool isStartup = actor.IsMoveRunning && !actor.IsReadyForExchange;
+            bool isActive = actor.IsMoveRunning && actor.IsReadyForExchange;
+
+            switch (move.MovementPhase)
+            {
+                case MovementPhase.None:
+                    return false;
+
+                case MovementPhase.StartupOnly:
+                    return isStartup;
+
+                case MovementPhase.ActiveOnly:
+                    return isActive;
+
+                case MovementPhase.StartupAndActive:
+                    return isStartup || isActive;
+
+                default:
+                    return false;
+            }
+        }
+
+        private static float GetMovementProgress(Actor actor, Move move)
+        {
+            switch (move.MovementPhase)
+            {
+                case MovementPhase.StartupOnly:
+                    return actor.StartupProgress;
+
+                case MovementPhase.ActiveOnly:
+                    return actor.ActiveProgress;
+
+                case MovementPhase.StartupAndActive:
+                    return actor.MoveProgress;
+
+                case MovementPhase.None:
+                default:
+                    return 0f;
+            }
+        }
         private void ApplyMovement(float deltaTime)
         {
             if (actorA == null || actorB == null || deltaTime <= 0f)
@@ -179,8 +227,7 @@ namespace Scripts
                 return;
             }
 
-            float speed = GetMovementSpeed(actor, move);
-            if (speed <= 0f)
+            if (!ShouldMoveNow(actor, move))
             {
                 return;
             }
@@ -191,41 +238,37 @@ namespace Scripts
                     return;
 
                 case MovementMode.StopAtRange:
-                    MoveTowardRange(actor, target, move.StopDistance, speed, deltaTime);
+                    MoveTowardRange(actor, target, move.StopDistance, move.Speed, deltaTime);
                     return;
 
                 case MovementMode.PassThroughTarget:
                 {
-                    float targetX = target.Position.x + (actor.FacingSign * move.PassThroughOffset);
-                    MoveTowardX(actor, targetX, speed, deltaTime);
+                    float targetX = target.Position.x + (actor.MoveStartFacingSign * move.PassThroughOffset);
+                    MoveToward(actor, targetX, GetMovementProgress(actor, move));
+                    return;
+                }
+
+                case MovementMode.FixedSpeedForward:
+                {
+                    if (Mathf.Abs(move.Speed) <= 0.001f)
+                    {
+                        return;
+                    }
+
+                    float direction = actor.MoveStartFacingSign * Mathf.Sign(move.Speed);
+                    float moveAmount = Mathf.Abs(move.Speed) * deltaTime;
+
+                    actor.MoveBy(new Vector2(direction * moveAmount, 0f));
                     return;
                 }
 
                 case MovementMode.FixedDistanceForward:
                 {
-                    float targetX = actor.MoveStartPosition.x + (actor.FacingSign * move.FixedTravelDistance);
-                    MoveTowardX(actor, targetX, speed, deltaTime);
+                    float targetX = actor.MoveStartPosition.x + (actor.MoveStartFacingSign * move.FixedTravelDistance);
+                    MoveToward(actor, targetX, GetMovementProgress(actor, move));
                     return;
                 }
             }
-        }
-
-        private static float GetMovementSpeed(Actor actor, Move move)
-        {
-            bool isStartup = actor.IsMoveRunning && !actor.IsReadyForExchange;
-            bool isActive = actor.IsMoveRunning && actor.IsReadyForExchange;
-
-            if (isStartup)
-            {
-                return move.StartupMoveSpeed;
-            }
-
-            if (isActive)
-            {
-                return move.ActiveMoveSpeed;
-            }
-
-            return 0f;
         }
 
         private static void MoveTowardRange(Actor actor, Actor target, float stopDistance, float speed, float deltaTime)
@@ -242,19 +285,11 @@ namespace Scripts
             float moveAmount = Mathf.Min(speed * deltaTime, remaining);
             actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
         }
-
-        private static void MoveTowardX(Actor actor, float targetX, float speed, float deltaTime)
+        private static void MoveToward(Actor actor, float targetX, float progress)
         {
-            float deltaX = targetX - actor.Position.x;
-            float remaining = Mathf.Abs(deltaX);
-
-            if (remaining <= 0.001f)
-            {
-                return;
-            }
-
-            float moveAmount = Mathf.Min(speed * deltaTime, remaining);
-            actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
+            float startX = actor.MoveStartPosition.x;
+            float x = Mathf.Lerp(startX, targetX, Mathf.Clamp01(progress));
+            actor.MoveTo(new Vector2(x, actor.Position.y));
         }
         // 돌진 만들어본거
 

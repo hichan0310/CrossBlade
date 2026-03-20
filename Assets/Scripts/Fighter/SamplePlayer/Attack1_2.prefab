@@ -262,12 +262,12 @@ MonoBehaviour:
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
   facingMode: 3
-  startupApproachSpeed: 0
-  activeApproachSpeed: 40
-  approachStopDistance: 1.5
   movementMode: 2
-  startupMoveSpeed: 0
-  activeMoveSpeed: 100
-  stopDistance: 1
-  passThroughOffset: 1.5
+  movementPhase: 2
+  speed: 0
+  stopDistance: 0
+  passThroughOffset: 3
   fixedTravelDistance: 0
+  delayVisualReveal: 1
+  visualRevealProgress: 0.4
+  visualRoot: {fileID: 3510763679438800581}

@@ -97,10 +97,10 @@ namespace Scripts
         [Header("References")]
         [SerializeField] private Rigidbody2D body;
         [SerializeField] private Transform moveMount;
-        // 추가한거
+        
         [SerializeField] private Transform facingRoot;
         [SerializeField] private bool positiveScaleFacesRight = true;
-        // 추가한거
+        
 
         [Header("Startup")]
         [SerializeField] private Move initialMove;
@@ -130,10 +130,11 @@ namespace Scripts
         private QueuedMove _pendingQueuedMove;
         private int _pendingInputForce;
 
-        //돌진 만들어본거
+        
         private Vector2 _moveStartPosition;
+        private int _moveStartFacingSign = 1;
         private bool _startFacingConsumed;
-        //돌진 만들어본거
+        
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
@@ -147,7 +148,7 @@ namespace Scripts
         internal int SpecialForce => specialForce;
         internal IList<Hitbox> weaponHitboxes => _currentMoveInstance != null ? _currentMoveInstance.WeaponHitboxes : Array.Empty<Hitbox>();
         internal Collider2D bodyCollider => _currentMoveInstance != null ? _currentMoveInstance.BodyCollider : null;
-        // 추가한거
+        
         internal string ActorId => actorId;
         internal int Hp => hp;
         internal int MaxHp => maxHp;
@@ -160,7 +161,8 @@ namespace Scripts
 
         internal Vector2 MoveStartPosition => _moveStartPosition;
 
-        //돌진 만들어본거
+        
+        internal int MoveStartFacingSign => _moveStartFacingSign;
         internal bool HasMoveVisual => _currentMoveInstance != null;
         internal int FacingSign
         {
@@ -183,6 +185,54 @@ namespace Scripts
             }
         }
 
+        internal float StartupProgress
+        {
+            get
+            {
+                if (moveStartDelay <= 0f)
+                {
+                    return 1f;
+                }
+
+                return Mathf.Clamp01((moveStartDelay - _moveStartupRemaining) / moveStartDelay);
+            }
+        }
+
+        internal float ActiveProgress
+        {
+            get
+            {
+                if (!_hasCurrent || _current.move == null || _current.move.Duration <= 0f)
+                {
+                    return 1f;
+                }
+
+                return Mathf.Clamp01(_current.elapsed / _current.move.Duration);
+            }
+        }
+        internal float MoveProgress
+        {
+            get
+            {
+                if (!_hasCurrent)
+                {
+                    return 1f;
+                }
+
+                float startupElapsed = Mathf.Max(0f, moveStartDelay - _moveStartupRemaining);
+                float activeElapsed = _current.elapsed;
+                float moveDuration = _current.move != null ? _current.move.Duration : 0f;
+                float totalDuration = moveStartDelay + moveDuration;
+
+                if (totalDuration <= 0f)
+                {
+                    return 1f;
+                }
+
+                return Mathf.Clamp01((startupElapsed + activeElapsed) / totalDuration);
+            }
+        }
+
         internal bool TryConsumeStartFacing()
         {
             if (!_hasCurrent || _startFacingConsumed)
@@ -193,7 +243,12 @@ namespace Scripts
             _startFacingConsumed = true;
             return true;
         }
-        //돌진 만들어본거
+
+        internal void SyncMoveStartFacing()
+        {
+            _moveStartFacingSign = FacingSign;
+        }
+        
 
         // targetPosition의 x 위치를 기준으로 좌우 방향만 전환
         internal void FaceTowards(Vector2 targetPosition)
@@ -224,7 +279,7 @@ namespace Scripts
             root.localScale = scale;
         }
 
-        // 추가한거
+        
 
         private void Awake()
         {
@@ -313,6 +368,8 @@ namespace Scripts
             {
                 FinishCurrentMove();
             }
+
+            // UpdateMoveVisualState();
         }
 
         internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
@@ -474,6 +531,10 @@ namespace Scripts
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = CreateMoveInstance(sourceMove);
+            // if (runtimeMove.DelayVisualReveal && runtimeMove.VisualRoot != null)
+            // {
+            //     runtimeMove.VisualRoot.gameObject.SetActive(false);
+            // }
             if (runtimeMove == null)
             {
                 return false;
@@ -491,10 +552,11 @@ namespace Scripts
             _hasCurrent = true;
             _currentMoveExchanged = false;
             _moveStartupRemaining = moveStartDelay;
-            //돌진 만들어본거
+            
             _moveStartPosition = Position;
+            _moveStartFacingSign = FacingSign;
             _startFacingConsumed = false;
-            //돌진 만들어본거
+            
             queued.move = runtimeMove;
             queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
@@ -597,6 +659,28 @@ namespace Scripts
         {
             SetActorPosition(position);
         }
+
+        // private void UpdateMoveVisualState()
+        // {
+        //     if (!_hasCurrent || _currentMoveInstance == null)
+        //     {
+        //         return;
+        //     }
+
+        //     Transform root = _currentMoveInstance.VisualRoot;
+        //     if (root == null)
+        //     {
+        //         return;
+        //     }
+
+        //     bool visible = !_currentMoveInstance.DelayVisualReveal
+        //         || MoveProgress >= _currentMoveInstance.VisualRevealProgress;
+
+        //     if (root.gameObject.activeSelf != visible)
+        //     {
+        //         root.gameObject.SetActive(visible);
+        //     }
+        // }
 
         private void SetActorPosition(Vector2 position)
         {

@@ -3064,6 +3064,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fd399c574b177405bd513fa41a22a72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Actor
+  actorType: 0
   actorId: Player
   maxHp: 100
   hp: 100
@@ -3328,6 +3329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fd399c574b177405bd513fa41a22a72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Actor
+  actorType: 0
   actorId: Enemy
   maxHp: 100
   hp: 100
