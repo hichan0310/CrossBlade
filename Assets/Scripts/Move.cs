@@ -20,8 +20,7 @@ namespace Scripts
         Guard,
         HitReaction
     }
-
-    // 추가한거
+    
     public enum FacingMode
     {
         UseActorDefault,   
@@ -29,19 +28,23 @@ namespace Scripts
         LockCurrentFacing, 
         FaceTargetOnStartOnly  
     }
-    // 추가한거
-
-
-    //돌진 만들어본거
-
+    
     public enum MovementMode
     {
         None,
         StopAtRange,
         PassThroughTarget,
-        FixedDistanceForward
+        FixedDistanceForward,
+        FixedSpeedForward
     }
-    // 돌진 만들어본거
+
+    public enum MovementPhase
+    {
+        None,
+        StartupOnly,
+        ActiveOnly,
+        StartupAndActive
+    }
 
     public class Move : MonoBehaviour
     {
@@ -69,30 +72,37 @@ namespace Scripts
         [SerializeField] private List<Move> after = new List<Move>();
         [SerializeField] private bool guardable = true;
         [SerializeField] private bool skipAdditionalInterruptFollowUp;
-        // 추가한거
+        
         [Header("Facing")]
         [SerializeField] private FacingMode facingMode = FacingMode.UseActorDefault;
 
         internal FacingMode FacingMode => facingMode;
-        // 추가한거
-
-        //돌진 만들어본거
+        
 
         [Header("Movement")]
         [SerializeField] private MovementMode movementMode = MovementMode.None;
-        [SerializeField, Min(0f)] private float startupMoveSpeed = 0f;
-        [SerializeField, Min(0f)] private float activeMoveSpeed = 0f;
-        [SerializeField, Min(0f)] private float stopDistance = 1.0f;
-        [SerializeField, Min(0f)] private float passThroughOffset = 0.5f;
-        [SerializeField, Min(0f)] private float fixedTravelDistance = 1.5f;
+        [SerializeField] private MovementPhase movementPhase = MovementPhase.None;
+        [SerializeField] private float speed = 0f;
+        [SerializeField, Min(0f)] private float stopDistance = 0f;
+        [SerializeField, Min(0f)] private float passThroughOffset = 0f;
+        [SerializeField,] private float fixedTravelDistance = 0f;
+
+        // [Header("Visual Timing")]
+        // [SerializeField] private bool delayVisualReveal = false;
+        // [SerializeField, Range(0f, 1f)] private float visualRevealProgress = 0f;
+        // [SerializeField] private Transform visualRoot;
+
+        // internal bool DelayVisualReveal => delayVisualReveal;
+        // internal float VisualRevealProgress => visualRevealProgress;
+        // internal Transform VisualRoot => visualRoot;
 
         internal MovementMode MovementMode => movementMode;
-        internal float StartupMoveSpeed => startupMoveSpeed;
-        internal float ActiveMoveSpeed => activeMoveSpeed;
+        internal MovementPhase MovementPhase => movementPhase;
+        internal float Speed => speed;
         internal float StopDistance => stopDistance;
         internal float PassThroughOffset => passThroughOffset;
         internal float FixedTravelDistance => fixedTravelDistance;
-        // 돌진 만들어본거
+       
         internal string MoveId => moveId;
         internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
