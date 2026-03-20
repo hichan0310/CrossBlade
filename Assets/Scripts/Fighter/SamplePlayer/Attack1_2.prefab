@@ -269,5 +269,5 @@ MonoBehaviour:
   passThroughOffset: 3
   fixedTravelDistance: 0
   delayVisualReveal: 1
-  visualRevealProgress: 0.4
+  visualRevealProgress: 0.7
   visualRoot: {fileID: 3510763679438800581}

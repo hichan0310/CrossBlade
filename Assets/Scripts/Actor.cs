@@ -109,6 +109,9 @@ namespace Scripts
         [SerializeField] private Move currentMoveDebug;
         [SerializeField] private float moveStartDelay = 0.1f;
 
+        [Header("UI")]
+        [SerializeField] private CanvasGroup uiCanvasGroup;
+
         private event Action<Actor, MoveRuntime> MoveStarted;
         private event Action<Actor, MoveRuntime> MoveFinished;
         private event Action<Actor, MoveRuntime, InterruptReason> MoveInterrupted;
@@ -125,6 +128,7 @@ namespace Scripts
         private MoveEventType? _forcedFollowUpTrigger;
         private int _forcedFollowUpRemaining;
         private Move _currentMoveInstance;
+        // private Move _lingeringMoveInstance;
         private bool _currentMoveExchanged;
         private float _moveStartupRemaining;
         private QueuedMove _pendingQueuedMove;
@@ -369,7 +373,7 @@ namespace Scripts
                 FinishCurrentMove();
             }
 
-            // UpdateMoveVisualState();
+            UpdateMoveVisualState();
         }
 
         internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
@@ -514,6 +518,32 @@ namespace Scripts
             _recoilFriction = Mathf.Max(0f, friction);
         }
 
+        // private static void PrepareLingeringMove(Move instance)
+        // {
+        //     if (instance == null)
+        //     {
+        //         return;
+        //     }
+
+        //     Hitbox[] hitboxes = instance.GetComponentsInChildren<Hitbox>(true);
+        //     for (int i = 0; i < hitboxes.Length; i++)
+        //     {
+        //         if (hitboxes[i] != null)
+        //         {
+        //             hitboxes[i].enabled = false;
+        //         }
+        //     }
+
+        //     Collider2D[] colliders = instance.GetComponentsInChildren<Collider2D>(true);
+        //     for (int i = 0; i < colliders.Length; i++)
+        //     {
+        //         if (colliders[i] != null)
+        //         {
+        //             colliders[i].enabled = false;
+        //         }
+        //     }
+        // }
+
         private bool StartMove(QueuedMove queued, int inputForce, CombatContext combatContext)
         {
             if (queued == null || queued.move == null)
@@ -528,13 +558,31 @@ namespace Scripts
                 currentMoveDebug = null;
             }
 
+            // if (!_hasCurrent && _currentMoveInstance != null)
+            // {
+            //     Move previousInstance = _currentMoveInstance;
+
+            //     if (queued.move != null && queued.move.DelayVisualReveal)
+            //     {
+            //         PrepareLingeringMove(previousInstance);
+            //         _lingeringMoveInstance = previousInstance;
+            //     }
+            //     else
+            //     {
+            //         ReleaseMoveInstance(previousInstance);
+            //     }
+
+            //     _currentMoveInstance = null;
+            //     currentMoveDebug = null;
+            // }
+
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = CreateMoveInstance(sourceMove);
-            // if (runtimeMove.DelayVisualReveal && runtimeMove.VisualRoot != null)
-            // {
-            //     runtimeMove.VisualRoot.gameObject.SetActive(false);
-            // }
+            if (runtimeMove.DelayVisualReveal && runtimeMove.VisualRoot != null)
+            {
+                runtimeMove.VisualRoot.gameObject.SetActive(false);
+            }
             if (runtimeMove == null)
             {
                 return false;
@@ -660,25 +708,63 @@ namespace Scripts
             SetActorPosition(position);
         }
 
+        private void UpdateMoveVisualState()
+        {
+            if (!_hasCurrent || _currentMoveInstance == null)
+            {
+                return;
+            }
+
+            Transform root = _currentMoveInstance.VisualRoot;
+            if (root == null)
+            {
+                return;
+            }
+
+            bool visible = !_currentMoveInstance.DelayVisualReveal
+                || MoveProgress >= _currentMoveInstance.VisualRevealProgress;
+
+            if (uiCanvasGroup != null)
+            {
+                uiCanvasGroup.alpha = visible ? 1f : 0f;
+            }
+            
+            if (root.gameObject.activeSelf != visible)
+            {
+                root.gameObject.SetActive(visible);
+            }
+        }
+
         // private void UpdateMoveVisualState()
         // {
-        //     if (!_hasCurrent || _currentMoveInstance == null)
+        //     if (_currentMoveInstance == null)
         //     {
         //         return;
         //     }
 
-        //     Transform root = _currentMoveInstance.VisualRoot;
-        //     if (root == null)
+        //     if (_currentMoveInstance.DelayVisualReveal && _currentMoveInstance.VisualRoot != null)
         //     {
-        //         return;
+        //         bool revealed = MoveProgress >= _currentMoveInstance.VisualRevealProgress;
+        //         _currentMoveInstance.VisualRoot.gameObject.SetActive(revealed);
+
+        //         if (revealed && _lingeringMoveInstance != null)
+        //         {
+        //             ReleaseMoveInstance(_lingeringMoveInstance);
+        //             _lingeringMoveInstance = null;
+        //         }
         //     }
-
-        //     bool visible = !_currentMoveInstance.DelayVisualReveal
-        //         || MoveProgress >= _currentMoveInstance.VisualRevealProgress;
-
-        //     if (root.gameObject.activeSelf != visible)
+        //     else
         //     {
-        //         root.gameObject.SetActive(visible);
+        //         if (_currentMoveInstance.VisualRoot != null)
+        //         {
+        //             _currentMoveInstance.VisualRoot.gameObject.SetActive(true);
+        //         }
+
+        //         if (_lingeringMoveInstance != null)
+        //         {
+        //             ReleaseMoveInstance(_lingeringMoveInstance);
+        //             _lingeringMoveInstance = null;
+        //         }
         //     }
         // }
 
