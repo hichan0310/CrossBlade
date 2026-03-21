@@ -74,15 +74,9 @@ namespace Scripts
 
         public void Simulate(float deltaTime)
         {
-            TryStartActors();
-            
-            UpdateFacing();
-            
-            
+            TryStartActors();         
+            UpdateFacing();           
             ApplyMovement(deltaTime);
-            
-            actorA.Tick(deltaTime);
-            actorB.Tick(deltaTime);
 
             if (actorA.IsMoveRunning && actorB.IsMoveRunning
                 && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
@@ -94,6 +88,9 @@ namespace Scripts
                 }
                 ApplyExchange(exchange);
             }
+
+            actorA.Tick(deltaTime);
+            actorB.Tick(deltaTime);
         }
 
         
@@ -515,6 +512,7 @@ namespace Scripts
                     bState.move.OnHit(actorB, this.combatContext);
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
+
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
                     break;

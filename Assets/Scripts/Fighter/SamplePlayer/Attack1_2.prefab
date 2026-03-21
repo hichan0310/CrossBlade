@@ -5188,7 +5188,6 @@ MonoBehaviour:
   guardMove: {fileID: 2602544448145009053, guid: 736770d66de59dbd68ebde8fb0ee7efe, type: 3}
   after:
   - {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
-  - {fileID: 4438537263650161847, guid: c0a18d6159da3bd88ba2326c04377005, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
   facingMode: 3
@@ -5199,7 +5198,7 @@ MonoBehaviour:
   passThroughOffset: 3
   fixedTravelDistance: 0
   delayVisualReveal: 1
-  visualRevealProgress: 0.7
+  visualRevealProgress: 0.904
   visualRoot: {fileID: 3510763679438800581}
   onAttackEffects:
   - {fileID: 8122564645124299528}
