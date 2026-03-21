@@ -508,7 +508,8 @@ namespace Scripts
                     {
                         bState.move.OnClash(actorB, this.combatContext);
                     }
-
+                    aState.move.OnAttack(actorA, this.combatContext);
+                    bState.move.OnHit(actorB, this.combatContext);
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 
@@ -517,6 +518,7 @@ namespace Scripts
                     break;
 
                 case ExchangeResult.ABlocksB:
+                    aState.move.OnAttack(actorA, this.combatContext);
                     DisableHitbox(exchange.hitboxA);
                     actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
@@ -524,6 +526,7 @@ namespace Scripts
                     break;
 
                 case ExchangeResult.BBlocksA:
+                    bState.move.OnAttack(actorB, this.combatContext);
                     DisableHitbox(exchange.hitboxB);
                     actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
@@ -531,6 +534,7 @@ namespace Scripts
                     break;
 
                 case ExchangeResult.AHitsB:
+                    aState.move.OnAttack(actorA, this.combatContext);
                     DisableHitbox(exchange.hitboxA);
                     context.userHpDamage = Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
                     actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
@@ -538,6 +542,7 @@ namespace Scripts
                     break;
 
                 case ExchangeResult.BHitsA:
+                    bState.move.OnAttack(actorB, this.combatContext);
                     DisableHitbox(exchange.hitboxB);
                     context.targetHpDamage = Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
                     actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);

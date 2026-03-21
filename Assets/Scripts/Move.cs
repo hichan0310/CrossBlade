@@ -52,9 +52,6 @@ namespace Scripts
         [SerializeField] private string moveId = "move";
         [SerializeField] private MoveCategory category = MoveCategory.Neutral;
 
-        [Header("Runtime View")] [SerializeField, HideInInspector]
-        private Collider2D weaponCollider;
-
         [SerializeField] private List<Hitbox> weaponHitboxes = new List<Hitbox>();
         [SerializeField] private Collider2D bodyCollider;
         public bool hasWeaponCollider => weaponHitboxes.Count > 0;
@@ -118,10 +115,19 @@ namespace Scripts
         internal virtual int StanceDamage => 0;
         internal virtual int StanceCost => 0;
         internal virtual int StanceRecovery => 0;
+        
+        [SerializeField] private List<MoveEffects> onAttackEffects;
 
 
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
+            Debug.Log(this.gameObject.name);
+            // foreach (Hitbox weaponHitbox in this.weaponHitboxes)
+            // {
+            //     weaponHitbox.Collider.enabled = true;
+            //     weaponHitbox.Collider.gameObject.SetActive(true);
+            // }
+
             carryOut = 0;
         }
 
@@ -141,6 +147,12 @@ namespace Scripts
 
         internal virtual void OnClash(Actor actor, CombatContext combatContext)
         {
+            
+        }
+
+        internal virtual void OnAttack(Actor actor, CombatContext combatContext)
+        {
+            onAttackEffects.ForEach(effect => effect.gameObject.SetActive(true));
         }
 
         private void Reset()
@@ -156,15 +168,6 @@ namespace Scripts
         private void CacheHitboxes()
         {
             weaponHitboxes.RemoveAll(hitbox => hitbox == null);
-
-            if (weaponHitboxes.Count == 0 && weaponCollider != null)
-            {
-                Hitbox legacyHitbox = weaponCollider.GetComponent<Hitbox>();
-                if (legacyHitbox != null)
-                {
-                    weaponHitboxes.Add(legacyHitbox);
-                }
-            }
 
             if (weaponHitboxes.Count > 0)
             {

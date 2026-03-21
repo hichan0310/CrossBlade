@@ -153,16 +153,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Hit
   category: 0
-  weaponCollider: {fileID: 0}
   weaponHitboxes: []
   bodyCollider: {fileID: 7829855777853199063}
   duration: 0.3
   knockbackResistance: 0
   stanceDamageResistance: 0
   hitMove: {fileID: 6858759112779511426}
-  guardMove: {fileID: 2602544448145009053, guid: 736770d66de59dbd68ebde8fb0ee7efe, type: 3}
+  guardMove: {fileID: 0}
   after:
   - {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
+  - {fileID: 4438537263650161847, guid: c0a18d6159da3bd88ba2326c04377005, type: 3}
   guardable: 0
   skipAdditionalInterruptFollowUp: 0
   facingMode: 0
@@ -175,3 +175,4 @@ MonoBehaviour:
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 0}
+  onAttackEffects: []

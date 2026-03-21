@@ -107,7 +107,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Idle
   category: 0
-  weaponCollider: {fileID: 0}
   weaponHitboxes: []
   bodyCollider: {fileID: 233149699117509991}
   duration: 0.3
@@ -129,6 +128,7 @@ MonoBehaviour:
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 0}
+  onAttackEffects: []
 --- !u!61 &233149699117509991
 BoxCollider2D:
   m_ObjectHideFlags: 0
