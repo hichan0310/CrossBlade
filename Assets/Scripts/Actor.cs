@@ -429,6 +429,7 @@ namespace Scripts
                 case MoveEventType.Guard:
                     next = interruptedSourceMove != null ? interruptedSourceMove.OnGuard(this, combatContext) : null;
                     break;
+
             }
 
             if (next == null)
@@ -576,10 +577,6 @@ namespace Scripts
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = CreateMoveInstance(sourceMove);
-            if (runtimeMove.DelayVisualReveal && runtimeMove.VisualRoot != null)
-            {
-                runtimeMove.VisualRoot.gameObject.SetActive(false);
-            }
             if (runtimeMove == null)
             {
                 return false;
@@ -667,6 +664,44 @@ namespace Scripts
             SetActorPosition(position);
         }
 
+        private static void SetVisualVisible(Transform root, bool visible)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            SpriteRenderer[] spriteRenderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < spriteRenderers.Length; i++)
+            {
+                if (spriteRenderers[i] != null)
+                {
+                    spriteRenderers[i].enabled = visible;
+                }
+            }
+
+            Animator[] animators = root.GetComponentsInChildren<Animator>(true);
+            for (int i = 0; i < animators.Length; i++)
+            {
+                if (animators[i] != null)
+                {
+                    animators[i].enabled = visible;
+                }
+            }
+
+            ParticleSystem[] particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                if (particleSystems[i] == null)
+                {
+                    continue;
+                }
+
+                var emission = particleSystems[i].emission;
+                emission.enabled = visible;
+            }
+        }
+
         private void UpdateMoveVisualState()
         {
             if (!_hasCurrent || _currentMoveInstance == null)
@@ -690,7 +725,7 @@ namespace Scripts
             
             if (root.gameObject.activeSelf != visible)
             {
-                root.gameObject.SetActive(visible);
+                SetVisualVisible(root, visible);
             }
         }
 
