@@ -981,7 +981,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 12
+        scalar: 30
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -5197,7 +5197,7 @@ MonoBehaviour:
   stopDistance: 0
   passThroughOffset: 3
   fixedTravelDistance: 0
-  delayVisualReveal: 1
+  delayVisualReveal: 0
   visualRevealProgress: 0.904
   visualRoot: {fileID: 3510763679438800581}
   onAttackEffects:

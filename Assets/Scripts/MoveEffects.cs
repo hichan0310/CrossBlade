@@ -11,7 +11,6 @@ namespace Scripts
 
         private void OnEnable()
         {
-            Debug.Log("OnEnable");
             if (noParents)
                 this.transform.SetParent(null);
             var root = this.transform;

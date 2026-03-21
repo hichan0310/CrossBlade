@@ -121,7 +121,6 @@ namespace Scripts
 
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
-            Debug.Log(this.gameObject.name);
             foreach (Hitbox weaponHitbox in this.weaponHitboxes)
             {
                 weaponHitbox.Collider.enabled = true;

@@ -509,7 +509,7 @@ namespace Scripts
                         bState.move.OnClash(actorB, this.combatContext);
                     }
                     aState.move.OnAttack(actorA, this.combatContext);
-                    bState.move.OnHit(actorB, this.combatContext);
+                    bState.move.OnAttack(actorB, this.combatContext);
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 

@@ -357,7 +357,6 @@ namespace Scripts
                 }
 
                 queued = _queue.Dequeue();
-                Debug.Log(queued.move);
                 if (queued.move == null)
                 {
                     return false;
