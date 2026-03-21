@@ -357,6 +357,7 @@ namespace Scripts
                 }
 
                 queued = _queue.Dequeue();
+                Debug.Log(queued.move);
                 if (queued.move == null)
                 {
                     return false;
@@ -640,6 +641,7 @@ namespace Scripts
             {
                 _chainCount = 0;
             }
+
 
             if (_queue.Count > 0 || finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
             {
