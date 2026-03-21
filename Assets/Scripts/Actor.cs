@@ -587,9 +587,9 @@ namespace Scripts
             _carriedForce = 0;
 
             queued.forceCarryIn = carriedForce;
-
             _currentMoveInstance = runtimeMove;
             currentMoveDebug = runtimeMove;
+            
             _currentQueuedMove = queued;
             _current = new MoveRuntime(runtimeMove, selectedForce, selectedForce + carriedForce);
             _hasCurrent = true;
@@ -604,6 +604,7 @@ namespace Scripts
             queued.Play(selectedForce, combatContext, this.actorType);
             queued.move = sourceMove;
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
+            UpdateMoveVisualState();
             GainSpecialForce(selectedForce);
             MoveStarted?.Invoke(this, _current);
             return true;
@@ -719,16 +720,15 @@ namespace Scripts
 
             bool visible = !_currentMoveInstance.DelayVisualReveal
                 || MoveProgress >= _currentMoveInstance.VisualRevealProgress;
+                
+            SetVisualVisible(root, visible);
 
             if (uiCanvasGroup != null)
             {
                 uiCanvasGroup.alpha = visible ? 1f : 0f;
             }
             
-            if (root.gameObject.activeSelf != visible)
-            {
-                SetVisualVisible(root, visible);
-            }
+            
         }
 
         // private void UpdateMoveVisualState()
