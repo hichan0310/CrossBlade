@@ -14,7 +14,8 @@ namespace Scripts
 
     public enum ActorType
     {
-        Player, Enemy
+        Player,
+        Enemy
     }
 
     [Serializable]
@@ -28,7 +29,7 @@ namespace Scripts
 
         public void Play(int inputForce, CombatContext combatContext, ActorType actorType)
         {
-            this.move.Play(actorType, combatContext, carryIn + inputForce, out carryOut);
+            move.Play(actorType, combatContext, carryIn + inputForce, out carryOut);
         }
     }
 
@@ -77,7 +78,7 @@ namespace Scripts
     public class Actor : MonoBehaviour
     {
         [SerializeField] private ActorType actorType;
-        
+
         [Header("Identity")]
         [SerializeField] private string actorId = "actor";
 
@@ -96,25 +97,15 @@ namespace Scripts
 
         [Header("References")]
         [SerializeField] private Rigidbody2D body;
-        [SerializeField] private Transform moveMount;
-        
+        [SerializeField] private ActorVisualController visualController;
         [SerializeField] private Transform facingRoot;
         [SerializeField] private bool positiveScaleFacesRight = true;
-        
 
         [Header("Startup")]
         [SerializeField] private Move initialMove;
 
         [Header("Debug")]
-        [SerializeField] private Move currentMoveDebug;
         [SerializeField] private float moveStartDelay = 0.1f;
-
-        [Header("UI")]
-        [SerializeField] private CanvasGroup uiCanvasGroup;
-
-        private event Action<Actor, MoveRuntime> MoveStarted;
-        private event Action<Actor, MoveRuntime> MoveFinished;
-        private event Action<Actor, MoveRuntime, InterruptReason> MoveInterrupted;
 
         private readonly Queue<QueuedMove> _queue = new Queue<QueuedMove>();
         private MoveRuntime _current;
@@ -125,32 +116,28 @@ namespace Scripts
         private float _recoilFriction;
         private float _nextAttackDamageMultiplier = 1f;
         private int _carriedForce;
-        private Move _currentMoveInstance;
-        // private Move _lingeringMoveInstance;
         private bool _currentMoveExchanged;
         private float _moveStartupRemaining;
-        private QueuedMove _pendingQueuedMove;
-        private int _pendingInputForce;
-
-        
         private Vector2 _moveStartPosition;
         private int _moveStartFacingSign = 1;
         private bool _startFacingConsumed;
-        
+
+        private Move CurrentMoveInstance => visualController != null ? visualController.CurrentMoveInstance : null;
+
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
         internal MoveRuntime Current => _current;
         internal int QueueCount => _queue.Count;
         internal bool IsGuardBroken => stance <= 0;
-        internal bool CanGuard => !IsGuardBroken && _currentMoveInstance != null && _currentMoveInstance.Guardable;
+        internal bool CanGuard => _hasCurrent && !IsGuardBroken && CurrentMoveInstance != null && CurrentMoveInstance.Guardable;
         internal Vector2 Position => body != null ? body.position : (Vector2)transform.position;
         internal float ChainMultiplier => Mathf.Min(1f + (_chainCount * chainStepBonus), chainMaxMultiplier);
-        internal float KnockbackResistance => knockbackResistance + (_currentMoveInstance != null ? _currentMoveInstance.KnockbackResistance : 0f);
+        internal float KnockbackResistance => knockbackResistance + (CurrentMoveInstance != null ? CurrentMoveInstance.KnockbackResistance : 0f);
         internal int SpecialForce => specialForce;
-        internal IList<Hitbox> weaponHitboxes => _currentMoveInstance != null ? _currentMoveInstance.WeaponHitboxes : Array.Empty<Hitbox>();
-        internal Collider2D bodyCollider => _currentMoveInstance != null ? _currentMoveInstance.BodyCollider : null;
-        
+        internal IList<Hitbox> weaponHitboxes => CurrentMoveInstance != null ? CurrentMoveInstance.WeaponHitboxes : Array.Empty<Hitbox>();
+        internal Collider2D bodyCollider => CurrentMoveInstance != null ? CurrentMoveInstance.BodyCollider : null;
+
         internal string ActorId => actorId;
         internal int Hp => hp;
         internal int MaxHp => maxHp;
@@ -160,12 +147,10 @@ namespace Scripts
         internal bool IsInStartup => _hasCurrent && _moveStartupRemaining > 0f;
         internal float StartupRemaining => _moveStartupRemaining;
         internal string CurrentMoveId => _current.move != null ? _current.move.MoveId : "-";
-
         internal Vector2 MoveStartPosition => _moveStartPosition;
-
-        
         internal int MoveStartFacingSign => _moveStartFacingSign;
-        internal bool HasMoveVisual => _currentMoveInstance != null;
+        internal bool HasMoveVisual => visualController != null && visualController.HasMoveVisual;
+
         internal int FacingSign
         {
             get
@@ -212,6 +197,7 @@ namespace Scripts
                 return Mathf.Clamp01(_current.elapsed / _current.move.Duration);
             }
         }
+
         internal float MoveProgress
         {
             get
@@ -250,9 +236,7 @@ namespace Scripts
         {
             _moveStartFacingSign = FacingSign;
         }
-        
 
-        // targetPosition의 x 위치를 기준으로 좌우 방향만 전환
         internal void FaceTowards(Vector2 targetPosition)
         {
             float deltaX = targetPosition.x - Position.x;
@@ -281,10 +265,13 @@ namespace Scripts
             root.localScale = scale;
         }
 
-        
-
         private void Awake()
         {
+            if (visualController == null)
+            {
+                visualController = GetComponent<ActorVisualController>();
+            }
+
             if (initialMove != null)
             {
                 Enqueue(initialMove);
@@ -309,8 +296,6 @@ namespace Scripts
         internal void ClearQueuedMovesForInterrupt()
         {
             ClearQueue();
-            _pendingQueuedMove = null;
-            _pendingInputForce = 0;
         }
 
         internal void EnqueueInterruptFollowUps(Move move, int count)
@@ -339,32 +324,18 @@ namespace Scripts
                 return false;
             }
 
-            QueuedMove queued = null;
-            int inputForce = 3;
-
-            if (_pendingQueuedMove != null)
+            if (_queue.Count == 0)
             {
-                queued = _pendingQueuedMove;
-                inputForce = _pendingInputForce;
-                _pendingQueuedMove = null;
-                _pendingInputForce = 0;
-            }
-            else
-            {
-                if (_queue.Count == 0)
-                {
-                    return false;
-                }
-
-                queued = _queue.Dequeue();
-                if (queued.move == null)
-                {
-                    return false;
-                }
-
-                inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
+                return false;
             }
 
+            QueuedMove queued = _queue.Dequeue();
+            if (queued.move == null)
+            {
+                return false;
+            }
+
+            int inputForce = forceSelector != null ? forceSelector(this, queued.move) : 3;
             return StartMove(queued, inputForce, combatContext);
         }
 
@@ -373,6 +344,7 @@ namespace Scripts
             if (!_hasCurrent)
             {
                 ApplyRecoil(deltaTime);
+                visualController?.RefreshMoveVisualState(false, 1f);
                 return;
             }
 
@@ -380,6 +352,7 @@ namespace Scripts
             {
                 _moveStartupRemaining = Mathf.Max(0f, _moveStartupRemaining - deltaTime);
                 ApplyRecoil(deltaTime);
+                visualController?.RefreshMoveVisualState(_hasCurrent, MoveProgress);
                 return;
             }
 
@@ -391,7 +364,7 @@ namespace Scripts
                 FinishCurrentMove();
             }
 
-            UpdateMoveVisualState();
+            visualController?.RefreshMoveVisualState(_hasCurrent, MoveProgress);
         }
 
         internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
@@ -411,12 +384,11 @@ namespace Scripts
             _carriedForce = 0;
             _currentMoveExchanged = false;
             _moveStartupRemaining = 0f;
-            _pendingQueuedMove = null;
-            _pendingInputForce = 0;
-            ReleaseMoveInstance(_currentMoveInstance);
-            _currentMoveInstance = null;
-            currentMoveDebug = null;
-            MoveInterrupted?.Invoke(this, interrupted, reason);
+
+            if (visualController != null)
+            {
+                visualController.ReleaseMoveInstance(CurrentMoveInstance);
+            }
 
             _chainCount = 0;
 
@@ -429,7 +401,6 @@ namespace Scripts
                 case MoveEventType.Guard:
                     next = interruptedSourceMove != null ? interruptedSourceMove.OnGuard(this, combatContext) : null;
                     break;
-
             }
 
             if (next == null)
@@ -453,7 +424,7 @@ namespace Scripts
 
         internal void ApplyStanceDamage(int amount)
         {
-            int reduced = Mathf.Max(0, amount - (_currentMoveInstance != null ? _currentMoveInstance.StanceDamageResistance : 0));
+            int reduced = Mathf.Max(0, amount - (CurrentMoveInstance != null ? CurrentMoveInstance.StanceDamageResistance : 0));
             stance = Mathf.Max(0, stance - reduced);
         }
 
@@ -516,32 +487,6 @@ namespace Scripts
             _recoilFriction = Mathf.Max(0f, friction);
         }
 
-        // private static void PrepareLingeringMove(Move instance)
-        // {
-        //     if (instance == null)
-        //     {
-        //         return;
-        //     }
-
-        //     Hitbox[] hitboxes = instance.GetComponentsInChildren<Hitbox>(true);
-        //     for (int i = 0; i < hitboxes.Length; i++)
-        //     {
-        //         if (hitboxes[i] != null)
-        //         {
-        //             hitboxes[i].enabled = false;
-        //         }
-        //     }
-
-        //     Collider2D[] colliders = instance.GetComponentsInChildren<Collider2D>(true);
-        //     for (int i = 0; i < colliders.Length; i++)
-        //     {
-        //         if (colliders[i] != null)
-        //         {
-        //             colliders[i].enabled = false;
-        //         }
-        //     }
-        // }
-
         private bool StartMove(QueuedMove queued, int inputForce, CombatContext combatContext)
         {
             if (queued == null || queued.move == null)
@@ -549,34 +494,19 @@ namespace Scripts
                 return false;
             }
 
-            if (!_hasCurrent && _currentMoveInstance != null)
+            if (visualController == null)
             {
-                ReleaseMoveInstance(_currentMoveInstance);
-                _currentMoveInstance = null;
-                currentMoveDebug = null;
+                visualController = GetComponent<ActorVisualController>();
             }
 
-            // if (!_hasCurrent && _currentMoveInstance != null)
-            // {
-            //     Move previousInstance = _currentMoveInstance;
-
-            //     if (queued.move != null && queued.move.DelayVisualReveal)
-            //     {
-            //         PrepareLingeringMove(previousInstance);
-            //         _lingeringMoveInstance = previousInstance;
-            //     }
-            //     else
-            //     {
-            //         ReleaseMoveInstance(previousInstance);
-            //     }
-
-            //     _currentMoveInstance = null;
-            //     currentMoveDebug = null;
-            // }
+            if (!_hasCurrent && CurrentMoveInstance != null && visualController != null)
+            {
+                visualController.ReleaseMoveInstance(CurrentMoveInstance);
+            }
 
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
-            Move runtimeMove = CreateMoveInstance(sourceMove);
+            Move runtimeMove = visualController != null ? visualController.CreateMoveInstance(sourceMove) : null;
             if (runtimeMove == null)
             {
                 return false;
@@ -586,26 +516,24 @@ namespace Scripts
             _carriedForce = 0;
 
             queued.forceCarryIn = carriedForce;
-            _currentMoveInstance = runtimeMove;
-            currentMoveDebug = runtimeMove;
-            
             _currentQueuedMove = queued;
             _current = new MoveRuntime(runtimeMove, selectedForce, selectedForce + carriedForce);
             _hasCurrent = true;
             _currentMoveExchanged = false;
             _moveStartupRemaining = moveStartDelay;
-            
+
             _moveStartPosition = Position;
             _moveStartFacingSign = FacingSign;
             _startFacingConsumed = false;
-            
+
             queued.move = runtimeMove;
-            queued.Play(selectedForce, combatContext, this.actorType);
+            queued.Play(selectedForce, combatContext, actorType);
             queued.move = sourceMove;
+
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
-            UpdateMoveVisualState();
+            visualController?.RefreshMoveVisualState(_hasCurrent, MoveProgress);
             GainSpecialForce(selectedForce);
-            MoveStarted?.Invoke(this, _current);
+
             return true;
         }
 
@@ -627,8 +555,6 @@ namespace Scripts
 
             _carriedForce = finishedQueuedMove != null ? finishedQueuedMove.forceCarryOut : 0;
 
-            MoveFinished?.Invoke(this, finished);
-
             if (_queue.Count > 0)
             {
                 _chainCount++;
@@ -638,7 +564,6 @@ namespace Scripts
             {
                 _chainCount = 0;
             }
-
 
             if (_queue.Count > 0 || finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
             {
@@ -666,103 +591,6 @@ namespace Scripts
             SetActorPosition(position);
         }
 
-        private static void SetVisualVisible(Transform root, bool visible)
-        {
-            if (root == null)
-            {
-                return;
-            }
-
-            SpriteRenderer[] spriteRenderers = root.GetComponentsInChildren<SpriteRenderer>(true);
-            for (int i = 0; i < spriteRenderers.Length; i++)
-            {
-                if (spriteRenderers[i] != null)
-                {
-                    spriteRenderers[i].enabled = visible;
-                }
-            }
-
-            Animator[] animators = root.GetComponentsInChildren<Animator>(true);
-            for (int i = 0; i < animators.Length; i++)
-            {
-                if (animators[i] != null)
-                {
-                    animators[i].enabled = visible;
-                }
-            }
-
-            ParticleSystem[] particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (int i = 0; i < particleSystems.Length; i++)
-            {
-                if (particleSystems[i] == null)
-                {
-                    continue;
-                }
-
-                var emission = particleSystems[i].emission;
-                emission.enabled = visible;
-            }
-        }
-
-        private void UpdateMoveVisualState()
-        {
-            if (!_hasCurrent || _currentMoveInstance == null)
-            {
-                return;
-            }
-
-            Transform root = _currentMoveInstance.VisualRoot;
-            if (root == null)
-            {
-                return;
-            }
-
-            bool visible = !_currentMoveInstance.DelayVisualReveal
-                || MoveProgress >= _currentMoveInstance.VisualRevealProgress;
-                
-            SetVisualVisible(root, visible);
-
-            if (uiCanvasGroup != null)
-            {
-                uiCanvasGroup.alpha = visible ? 1f : 0f;
-            }
-            
-            
-        }
-
-        // private void UpdateMoveVisualState()
-        // {
-        //     if (_currentMoveInstance == null)
-        //     {
-        //         return;
-        //     }
-
-        //     if (_currentMoveInstance.DelayVisualReveal && _currentMoveInstance.VisualRoot != null)
-        //     {
-        //         bool revealed = MoveProgress >= _currentMoveInstance.VisualRevealProgress;
-        //         _currentMoveInstance.VisualRoot.gameObject.SetActive(revealed);
-
-        //         if (revealed && _lingeringMoveInstance != null)
-        //         {
-        //             ReleaseMoveInstance(_lingeringMoveInstance);
-        //             _lingeringMoveInstance = null;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         if (_currentMoveInstance.VisualRoot != null)
-        //         {
-        //             _currentMoveInstance.VisualRoot.gameObject.SetActive(true);
-        //         }
-
-        //         if (_lingeringMoveInstance != null)
-        //         {
-        //             ReleaseMoveInstance(_lingeringMoveInstance);
-        //             _lingeringMoveInstance = null;
-        //         }
-        //     }
-        // }
-
         private void SetActorPosition(Vector2 position)
         {
             if (body != null)
@@ -772,32 +600,6 @@ namespace Scripts
             }
 
             transform.position = position;
-        }
-
-        private Move CreateMoveInstance(Move template)
-        {
-            Transform parent = moveMount != null ? moveMount : transform;
-            Move instance = Instantiate(template, parent);
-            instance.transform.localPosition = Vector3.zero;
-            instance.transform.localRotation = Quaternion.identity;
-            instance.transform.localScale = Vector3.one;
-
-            return instance;
-        }
-
-        private void ReleaseMoveInstance(Move instance)
-        {
-            if (instance == null)
-            {
-                return;
-            }
-
-            if (!instance.name.EndsWith("__DYING", StringComparison.Ordinal))
-            {
-                instance.name += "__DYING";
-            }
-
-            Destroy(instance.gameObject);
         }
 
         private void ApplyRecoil(float deltaTime)

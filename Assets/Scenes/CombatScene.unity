@@ -2896,6 +2896,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 556833179}
+  - component: {fileID: 556833180}
   m_Layer: 0
   m_Name: UIAnchor
   m_TagString: Untagged
@@ -2920,6 +2921,18 @@ Transform:
   - {fileID: 184685622}
   m_Father: {fileID: 2119092439}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!225 &556833180
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 556833178}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &565011078
 GameObject:
   m_ObjectHideFlags: 0
@@ -6494,6 +6507,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1796795474}
   - component: {fileID: 1796795473}
+  - component: {fileID: 1796795476}
   - component: {fileID: 1796795475}
   m_Layer: 0
   m_Name: Player
@@ -6526,13 +6540,11 @@ MonoBehaviour:
   chainStepBonus: 0.05
   chainMaxMultiplier: 1.5
   body: {fileID: 1796795475}
-  moveMount: {fileID: 16274922}
+  visualController: {fileID: 1796795476}
   facingRoot: {fileID: 657711825}
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
-  currentMoveDebug: {fileID: 0}
   moveStartDelay: 0.1
-  uiCanvasGroup: {fileID: 195829951}
 --- !u!4 &1796795474
 Transform:
   m_ObjectHideFlags: 0
@@ -6577,6 +6589,21 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &1796795476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796795472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e3a92117bd920349b1da96d7cae752d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorVisualController
+  moveMount: {fileID: 16274922}
+  uiCanvasGroup: {fileID: 195829951}
+  currentMoveDebug: {fileID: 0}
 --- !u!1 &1990411119
 GameObject:
   m_ObjectHideFlags: 0
@@ -6760,6 +6787,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2119092439}
   - component: {fileID: 2119092438}
+  - component: {fileID: 2119092441}
   - component: {fileID: 2119092440}
   m_Layer: 0
   m_Name: Enemy
@@ -6792,13 +6820,11 @@ MonoBehaviour:
   chainStepBonus: 0.05
   chainMaxMultiplier: 1.5
   body: {fileID: 2119092440}
-  moveMount: {fileID: 859725723}
+  visualController: {fileID: 2119092441}
   facingRoot: {fileID: 1312812666}
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4321802175857072457, guid: 922d1e15bc8e10eeba96020d842fe387, type: 3}
-  currentMoveDebug: {fileID: 0}
   moveStartDelay: 0.1
-  uiCanvasGroup: {fileID: 0}
 --- !u!4 &2119092439
 Transform:
   m_ObjectHideFlags: 0
@@ -6843,6 +6869,21 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &2119092441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2119092437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e3a92117bd920349b1da96d7cae752d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorVisualController
+  moveMount: {fileID: 859725723}
+  uiCanvasGroup: {fileID: 556833180}
+  currentMoveDebug: {fileID: 0}
 --- !u!1 &2133297744
 GameObject:
   m_ObjectHideFlags: 0
