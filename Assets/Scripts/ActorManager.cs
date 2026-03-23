@@ -93,7 +93,6 @@ namespace Scripts
             actorB.Tick(deltaTime);
         }
 
-        
         // 방향 전환
         private void UpdateFacing()
         {
@@ -154,9 +153,6 @@ namespace Scripts
                     return;
             }
         }
-        
-
-        // 돌진 만들어본거
 
         private static bool ShouldMoveNow(Actor actor, Move move)
         {
@@ -288,7 +284,6 @@ namespace Scripts
             float x = Mathf.Lerp(startX, targetX, Mathf.Clamp01(progress));
             actor.MoveTo(new Vector2(x, actor.Position.y));
         }
-        // 돌진 만들어본거
 
         public void TryStartActors()
         {
@@ -501,15 +496,15 @@ namespace Scripts
                 case ExchangeResult.Clash:
                     if (aState.move != null)
                     {
-                        aState.move.OnClash(actorA, this.combatContext);
+                        aState.move.OnClash(actorA, context);
                     }
 
                     if (bState.move != null)
                     {
-                        bState.move.OnClash(actorB, this.combatContext);
+                        bState.move.OnClash(actorB, context);
                     }
-                    aState.move.OnAttack(actorA, this.combatContext);
-                    bState.move.OnAttack(actorB, this.combatContext);
+                    aState.move.OnAttack(actorA, context);
+                    bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 
@@ -518,34 +513,34 @@ namespace Scripts
                     break;
 
                 case ExchangeResult.ABlocksB:
-                    aState.move.OnAttack(actorA, this.combatContext);
+                    aState.move.OnAttack(actorA, context);
                     DisableHitbox(exchange.hitboxA);
-                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
+                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, context);
                     actorB.ApplyStanceDamage(context.userStanceDamage);
                     actorA.ApplyStanceDamage(Mathf.Max(1, context.targetStanceDamage));
                     break;
 
                 case ExchangeResult.BBlocksA:
-                    bState.move.OnAttack(actorB, this.combatContext);
+                    bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxB);
-                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, this.combatContext);
+                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, context);
                     actorA.ApplyStanceDamage(context.targetStanceDamage);
                     actorB.ApplyStanceDamage(Mathf.Max(1, context.userStanceDamage));
                     break;
 
                 case ExchangeResult.AHitsB:
-                    aState.move.OnAttack(actorA, this.combatContext);
+                    aState.move.OnAttack(actorA, context);
                     DisableHitbox(exchange.hitboxA);
                     context.userHpDamage = Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
-                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
+                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorB.ApplyHpDamage(context.userHpDamage);
                     break;
 
                 case ExchangeResult.BHitsA:
-                    bState.move.OnAttack(actorB, this.combatContext);
+                    bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxB);
                     context.targetHpDamage = Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
-                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, this.combatContext);
+                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorA.ApplyHpDamage(context.targetHpDamage);
                     break;
             }

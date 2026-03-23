@@ -214,7 +214,7 @@ MonoBehaviour:
   - {fileID: 6177890668136298235, guid: 40f0555285334d262820705ff1a4d3a3, type: 3}
   guardable: 1
   skipAdditionalInterruptFollowUp: 0
-  facingMode: 0
+  facingMode: 3
   movementMode: 0
   movementPhase: 0
   speed: 0
