@@ -235,6 +235,7 @@ namespace Scripts
 
             if (_owner.HasVisualController)
             {
+                _owner.CapturePreviousVisualSnapshotFromAction();
                 _owner.ReleaseMoveInstanceFromAction(_owner.CurrentMoveVisual);
             }
 
@@ -281,12 +282,14 @@ namespace Scripts
 
             if (!_hasCurrent && _owner.CurrentMoveVisual != null && _owner.HasVisualController)
             {
+                _owner.CapturePreviousVisualSnapshotFromAction();
                 _owner.ReleaseMoveInstanceFromAction(_owner.CurrentMoveVisual);
             }
 
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = _owner.CreateMoveInstanceFromAction(sourceMove);
+            _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             if (runtimeMove == null)
             {
                 return false;
