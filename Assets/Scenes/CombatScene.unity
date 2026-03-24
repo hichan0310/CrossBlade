@@ -6508,6 +6508,7 @@ GameObject:
   - component: {fileID: 1796795474}
   - component: {fileID: 1796795473}
   - component: {fileID: 1796795476}
+  - component: {fileID: 1796795477}
   - component: {fileID: 1796795475}
   m_Layer: 0
   m_Name: Player
@@ -6541,6 +6542,7 @@ MonoBehaviour:
   chainMaxMultiplier: 1.5
   body: {fileID: 1796795475}
   visualController: {fileID: 1796795476}
+  actionController: {fileID: 1796795477}
   facingRoot: {fileID: 657711825}
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
@@ -6604,6 +6606,18 @@ MonoBehaviour:
   moveMount: {fileID: 16274922}
   uiCanvasGroup: {fileID: 195829951}
   currentMoveDebug: {fileID: 0}
+--- !u!114 &1796795477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796795472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfb389bb3c371bf4ba793c8d1a5b8c1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorActionController
 --- !u!1 &1990411119
 GameObject:
   m_ObjectHideFlags: 0
@@ -6788,6 +6802,7 @@ GameObject:
   - component: {fileID: 2119092439}
   - component: {fileID: 2119092438}
   - component: {fileID: 2119092441}
+  - component: {fileID: 2119092442}
   - component: {fileID: 2119092440}
   m_Layer: 0
   m_Name: Enemy
@@ -6821,6 +6836,7 @@ MonoBehaviour:
   chainMaxMultiplier: 1.5
   body: {fileID: 2119092440}
   visualController: {fileID: 2119092441}
+  actionController: {fileID: 2119092442}
   facingRoot: {fileID: 1312812666}
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4321802175857072457, guid: 922d1e15bc8e10eeba96020d842fe387, type: 3}
@@ -6884,6 +6900,18 @@ MonoBehaviour:
   moveMount: {fileID: 859725723}
   uiCanvasGroup: {fileID: 556833180}
   currentMoveDebug: {fileID: 0}
+--- !u!114 &2119092442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2119092437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfb389bb3c371bf4ba793c8d1a5b8c1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorActionController
 --- !u!1 &2133297744
 GameObject:
   m_ObjectHideFlags: 0
