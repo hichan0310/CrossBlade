@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,8 +11,15 @@ namespace Scripts
         [SerializeField] private Transform moveMount;
         [SerializeField] private CanvasGroup uiCanvasGroup;
 
+        [Header("Visual Reveal")]
+        [SerializeField] private Transform previousVisualFallbackRoot;
+
+
         [Header("Debug")]
         [SerializeField] private Move currentMoveDebug;
+
+        private readonly List<SpriteRenderer> _fallbackRenderers = new List<SpriteRenderer>();
+        private bool _showPreviousVisual;
 
         private Move _currentMoveInstance;
 
@@ -58,10 +66,138 @@ namespace Scripts
             Destroy(instance.gameObject);
         }
 
+        internal void CapturePreviousVisualSnapshot()
+        {
+            if (_currentMoveInstance == null || previousVisualFallbackRoot == null)
+            {
+                ClearPreviousVisualSnapshot();
+                return;
+            }
+
+            Transform sourceRoot = _currentMoveInstance.VisualRoot;
+            if (sourceRoot == null)
+            {
+                ClearPreviousVisualSnapshot();
+                return;
+            }
+
+            SpriteRenderer[] sourceRenderers = sourceRoot.GetComponentsInChildren<SpriteRenderer>(true);
+            if (sourceRenderers == null || sourceRenderers.Length == 0)
+            {
+                ClearPreviousVisualSnapshot();
+                return;
+            }
+
+            EnsureFallbackPoolSize(sourceRenderers.Length);
+
+            for (int i = 0; i < sourceRenderers.Length; i++)
+            {
+                SpriteRenderer source = sourceRenderers[i];
+                SpriteRenderer target = _fallbackRenderers[i];
+
+                if (source == null || target == null)
+                {
+                    continue;
+                }
+
+                target.gameObject.SetActive(true);
+                target.sprite = source.sprite;
+                target.color = source.color;
+                target.flipX = source.flipX;
+                target.flipY = source.flipY;
+                target.sortingLayerID = source.sortingLayerID;
+                target.sortingOrder = source.sortingOrder;
+                target.sharedMaterial = source.sharedMaterial;
+                target.transform.localPosition = previousVisualFallbackRoot.InverseTransformPoint(source.transform.position);
+                target.transform.localRotation = Quaternion.Inverse(previousVisualFallbackRoot.rotation) * source.transform.rotation;
+
+                Vector3 sourceScale = source.transform.lossyScale;
+                target.transform.localScale = new Vector3(
+                    Mathf.Abs(sourceScale.x),
+                    Mathf.Abs(sourceScale.y),
+                    Mathf.Abs(sourceScale.z)
+                );
+            }
+
+            for (int i = sourceRenderers.Length; i < _fallbackRenderers.Count; i++)
+            {
+                if (_fallbackRenderers[i] != null)
+                {
+                    _fallbackRenderers[i].gameObject.SetActive(false);
+                }
+            }
+
+            previousVisualFallbackRoot.gameObject.SetActive(true);
+        }
+
+        internal void BeginPreviousVisual(bool enabled)
+        {
+            _showPreviousVisual = enabled && HasFallbackVisual();
+
+            if (!_showPreviousVisual)
+            {
+                SetPreviousVisualVisible(false);
+            }
+        }
+
+        internal void ClearPreviousVisualSnapshot()
+        {
+            _showPreviousVisual = false;
+            SetPreviousVisualVisible(false);
+        }
+
+        private bool HasFallbackVisual()
+        {
+            if (previousVisualFallbackRoot == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _fallbackRenderers.Count; i++)
+            {
+                if (_fallbackRenderers[i] != null &&
+                    _fallbackRenderers[i].gameObject.activeSelf &&
+                    _fallbackRenderers[i].sprite != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void SetPreviousVisualVisible(bool visible)
+        {
+            if (previousVisualFallbackRoot == null)
+            {
+                return;
+            }
+
+            previousVisualFallbackRoot.gameObject.SetActive(visible);
+        }
+
+        private void EnsureFallbackPoolSize(int count)
+        {
+            if (previousVisualFallbackRoot == null)
+            {
+                return;
+            }
+
+            while (_fallbackRenderers.Count < count)
+            {
+                GameObject go = new GameObject($"PreviousVisual_{_fallbackRenderers.Count}");
+                go.transform.SetParent(previousVisualFallbackRoot, false);
+                SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+                _fallbackRenderers.Add(sr);
+            }
+        }
+
         internal void RefreshMoveVisualState(bool hasCurrent, float moveProgress)
         {
             if (_currentMoveInstance == null)
             {
+                ClearPreviousVisualSnapshot();
+
                 if (uiCanvasGroup != null)
                 {
                     uiCanvasGroup.alpha = 1f;
@@ -72,6 +208,8 @@ namespace Scripts
 
             if (!hasCurrent)
             {
+                ClearPreviousVisualSnapshot();
+
                 if (uiCanvasGroup != null)
                 {
                     uiCanvasGroup.alpha = 1f;
@@ -83,6 +221,8 @@ namespace Scripts
             Transform root = _currentMoveInstance.VisualRoot;
             if (root == null)
             {
+                ClearPreviousVisualSnapshot();
+
                 if (uiCanvasGroup != null)
                 {
                     uiCanvasGroup.alpha = 1f;
@@ -91,14 +231,26 @@ namespace Scripts
                 return;
             }
 
-            bool visible = !_currentMoveInstance.DelayVisualReveal
-                || moveProgress >= _currentMoveInstance.VisualRevealProgress;
+            bool revealBlocked = _currentMoveInstance.DelayVisualReveal
+                && moveProgress < _currentMoveInstance.VisualRevealProgress;
 
-            SetVisualVisible(root, visible);
+            bool showFallback = _showPreviousVisual
+                && revealBlocked
+                && HasFallbackVisual();
+
+            if (!revealBlocked)
+            {
+                _showPreviousVisual = false;
+            }
+
+            bool currentVisible = !revealBlocked;
+
+            SetVisualVisible(root, currentVisible);
+            SetPreviousVisualVisible(showFallback);
 
             if (uiCanvasGroup != null)
             {
-                uiCanvasGroup.alpha = visible ? 1f : 0f;
+                uiCanvasGroup.alpha = (currentVisible || showFallback) ? 1f : 0f;
             }
         }
 

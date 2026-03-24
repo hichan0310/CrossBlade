@@ -400,5 +400,20 @@ namespace Scripts
 
             stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
         }
+
+        internal void CapturePreviousVisualSnapshotFromAction()
+        {
+            visualController?.CapturePreviousVisualSnapshot();
+        }
+
+        internal void BeginPreviousVisualFromAction(bool enabled)
+        {
+            visualController?.BeginPreviousVisual(enabled);
+        }
+
+        internal void ClearPreviousVisualSnapshotFromAction()
+        {
+            visualController?.ClearPreviousVisualSnapshot();
+        }
     }
 }

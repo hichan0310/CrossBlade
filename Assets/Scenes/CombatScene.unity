@@ -1842,6 +1842,37 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &249785710
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 249785711}
+  m_Layer: 0
+  m_Name: PreviousVisualFallbackRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &249785711
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249785710}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.81, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1312812666}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &282297421
 GameObject:
   m_ObjectHideFlags: 0
@@ -3129,6 +3160,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 16274922}
+  - {fileID: 1055672870}
   m_Father: {fileID: 1796795474}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &662999885
@@ -4398,6 +4430,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1055672869
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1055672870}
+  m_Layer: 0
+  m_Name: PreviousVisualFallbackRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1055672870
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055672869}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 657711825}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1181174709
 GameObject:
   m_ObjectHideFlags: 0
@@ -5108,6 +5171,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 859725723}
+  - {fileID: 249785711}
   m_Father: {fileID: 2119092439}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1321544606
@@ -6605,6 +6669,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorVisualController
   moveMount: {fileID: 16274922}
   uiCanvasGroup: {fileID: 195829951}
+  previousVisualFallbackRoot: {fileID: 1055672870}
   currentMoveDebug: {fileID: 0}
 --- !u!114 &1796795477
 MonoBehaviour:
@@ -6899,6 +6964,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorVisualController
   moveMount: {fileID: 859725723}
   uiCanvasGroup: {fileID: 556833180}
+  previousVisualFallbackRoot: {fileID: 249785711}
   currentMoveDebug: {fileID: 0}
 --- !u!114 &2119092442
 MonoBehaviour:
