@@ -9,7 +9,6 @@ namespace Scripts
     {
         [Header("References")]
         [SerializeField] private Transform moveMount;
-        [SerializeField] private CanvasGroup uiCanvasGroup;
 
         [Header("Visual Reveal")]
         [SerializeField] private Transform previousVisualFallbackRoot;
@@ -197,24 +196,12 @@ namespace Scripts
             if (_currentMoveInstance == null)
             {
                 ClearPreviousVisualSnapshot();
-
-                if (uiCanvasGroup != null)
-                {
-                    uiCanvasGroup.alpha = 1f;
-                }
-
                 return;
             }
 
             if (!hasCurrent)
             {
                 ClearPreviousVisualSnapshot();
-
-                if (uiCanvasGroup != null)
-                {
-                    uiCanvasGroup.alpha = 1f;
-                }
-
                 return;
             }
 
@@ -222,12 +209,6 @@ namespace Scripts
             if (root == null)
             {
                 ClearPreviousVisualSnapshot();
-
-                if (uiCanvasGroup != null)
-                {
-                    uiCanvasGroup.alpha = 1f;
-                }
-
                 return;
             }
 
@@ -248,10 +229,6 @@ namespace Scripts
             SetVisualVisible(root, currentVisible);
             SetPreviousVisualVisible(showFallback);
 
-            if (uiCanvasGroup != null)
-            {
-                uiCanvasGroup.alpha = (currentVisible || showFallback) ? 1f : 0f;
-            }
         }
 
         private static void SetVisualVisible(Transform root, bool visible)

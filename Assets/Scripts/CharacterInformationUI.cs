@@ -12,8 +12,6 @@ namespace Scripts
         [Serializable]
         private class ActorPanel
         {
-            public TMP_Text nameText;
-            public TMP_Text moveText;
             public Slider hpSlider;
             public Slider stanceSlider;
             public Slider specialSlider;
@@ -54,16 +52,11 @@ namespace Scripts
 
             if (actor == null)
             {
-                SetText(panel.nameText, "-");
-                SetText(panel.moveText, "Move  -");
                 SetSlider(panel.hpSlider, 0, 1);
                 SetSlider(panel.stanceSlider, 0, 1);
                 SetSlider(panel.specialSlider, 0, 1);
                 return;
             }
-
-            SetText(panel.nameText, actor.ActorId);
-            SetText(panel.moveText, $"Move  {actor.CurrentMoveId}");
 
             SetSlider(panel.hpSlider, actor.Hp, actor.MaxHp);
 
