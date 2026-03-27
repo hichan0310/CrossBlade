@@ -5615,7 +5615,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1626242694}
   m_Layer: 0
-  m_Name: UIAnchor
+  m_Name: StatusUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
