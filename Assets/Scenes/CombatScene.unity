@@ -1033,7 +1033,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1321544607}
-  m_Father: {fileID: 1626242694}
+  m_Father: {fileID: 1516819993}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!225 &195829951
 CanvasGroup:
@@ -2742,7 +2742,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1743640369}
-  m_Father: {fileID: 1626242694}
+  m_Father: {fileID: 1516819993}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!225 &556833180
 CanvasGroup:
@@ -5253,7 +5253,9 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 195829950}
+  - {fileID: 556833179}
   m_Father: {fileID: 1544346262}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1544346261
@@ -5287,7 +5289,6 @@ Transform:
   m_Children:
   - {fileID: 1516819993}
   - {fileID: 1792414389}
-  - {fileID: 1626242694}
   - {fileID: 285538191}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5605,39 +5606,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &1626242693
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1626242694}
-  m_Layer: 0
-  m_Name: StatusUI
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1626242694
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1626242693}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 195829950}
-  - {fileID: 556833179}
-  m_Father: {fileID: 1544346262}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1666544172
 GameObject:
   m_ObjectHideFlags: 0
