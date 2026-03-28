@@ -3005,7 +3005,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.ActorManager
   actorA: {fileID: 1796795473}
   actorB: {fileID: 2119092438}
-  autoSimulate: 0
+  autoSimulate: 1
   c: 3
   d: 5
   l: 5
@@ -7024,6 +7024,10 @@ MonoBehaviour:
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
   moveStartDelay: 0.1
+  inputDuration: 0.1
+  gettingForce: 0
+  gettingForceFinished: 0
+  gettingForceTimer: 0
 --- !u!4 &1796795474
 Transform:
   m_ObjectHideFlags: 0
@@ -7362,6 +7366,10 @@ MonoBehaviour:
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4321802175857072457, guid: 922d1e15bc8e10eeba96020d842fe387, type: 3}
   moveStartDelay: 0.1
+  inputDuration: 0.1
+  gettingForce: 0
+  gettingForceFinished: 0
+  gettingForceTimer: 0
 --- !u!4 &2119092439
 Transform:
   m_ObjectHideFlags: 0
