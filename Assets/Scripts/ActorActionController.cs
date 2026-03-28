@@ -30,6 +30,7 @@ namespace Scripts
         internal float StartupRemaining => _moveStartupRemaining;
         internal Vector2 MoveStartPosition => _moveStartPosition;
         internal int MoveStartFacingSign => _moveStartFacingSign;
+        internal Move nextMove => _queue.Count > 0 ? _queue.Peek().move : null;
 
         internal float StartupProgress
         {
@@ -356,10 +357,16 @@ namespace Scripts
                 return;
             }
 
+            //FillQueue(finishedSourceMove);                        
+        }
+        
+        public bool FillQueue(Move finishedSourceMove)
+        {
             int nextIndex = UnityEngine.Random.Range(0, finishedSourceMove.After.Count);
             QueuedMove autoQueuedMove = new QueuedMove { move = finishedSourceMove.After[nextIndex] };
             autoQueuedMove.forceCarryIn = _carriedForce;
             _queue.Enqueue(autoQueuedMove);
+            return true;
         }
     }
 }

@@ -105,6 +105,22 @@ namespace Scripts
 
         [Header("Debug")]
         [SerializeField] private float moveStartDelay = 0.1f;
+        
+        [Header("Input")]
+        [SerializeField] private float inputDuration = 1f;
+        
+        [SerializeField] private bool gettingForce = false;
+        public bool GettingForce => gettingForce;
+        [SerializeField] private bool gettingForceFinished=false;
+        public bool GettingForceFinished => gettingForceFinished;
+        [SerializeField] private float gettingForceTimer = 0f;
+
+        public void StartGettingForce()
+        {
+            gettingForce = true;
+            gettingForceTimer = inputDuration;
+            Debug.Log("StartGettingForce");
+        }
 
         internal int PendingForce => pendingForce;
         internal bool CanIncreasePendingForce()
@@ -120,6 +136,7 @@ namespace Scripts
             }
 
             pendingForce++;
+            gettingForceTimer = inputDuration;
             return true;
         }
 
@@ -128,6 +145,20 @@ namespace Scripts
             int value = Mathf.Clamp(pendingForce, 1, 5);
             pendingForce = 1;
             return value;
+        }
+
+        public void ForceUpdate(float deltaTime)
+        {
+            if (gettingForce)
+            {
+                gettingForceTimer -= deltaTime;
+                if (gettingForceTimer <= 0f)
+                {
+                    gettingForceTimer = 0;
+                    gettingForce = false;
+                    gettingForceFinished = true;
+                }
+            }
         }
 
         private Vector2 _recoilVelocity;
@@ -270,6 +301,7 @@ namespace Scripts
 
         internal bool TryStartNextMove(Func<Actor, Move, int> forceSelector, CombatContext combatContext)
         {
+            gettingForceFinished = false;
             return actionController != null && actionController.TryStartNextMove(forceSelector, combatContext);
         }
 

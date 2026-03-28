@@ -28,25 +28,23 @@ namespace Scripts
             public float speedB;
         }
 
-        [Header("Actors")]
-        public Actor actorA;
+        [Header("Actors")] public Actor actorA;
         public Actor actorB;
         public CombatContext combatContext;
 
-        [Header("Simulation")]
-        public bool autoSimulate = true;
+        [Header("Simulation")] public bool autoSimulate = true;
 
-        [Header("Defaults")]
+        [Header("Defaults")] [Header("Knockback")] [SerializeField]
+        private float c;
 
-        [Header("Knockback")] 
-        [SerializeField] private float c;
         [SerializeField] private float d;
         [SerializeField] private float l;
         [Min(0f)] public float knockbackFriction = 10f;
         [SerializeField] private float clashDecrease;
 
-        [Header("Turn Stop (Debug)")]
-        [SerializeField, Min(0)] private int stopTurnsA;
+        [Header("Turn Stop (Debug)")] [SerializeField, Min(0)]
+        private int stopTurnsA;
+
         [SerializeField, Min(0)] private int stopTurnsB;
 
         // 프레임마다 stop 턴이 줄어드는 것을 막기 위한 게이트.
@@ -73,18 +71,23 @@ namespace Scripts
 
         public void Simulate(float deltaTime)
         {
-            TryStartActors();         
-            UpdateFacing();           
+            this.actorA.ForceUpdate(deltaTime);
+            this.actorB.ForceUpdate(deltaTime);
+            TryStartActors();
+            UpdateFacing();
             ApplyMovement(deltaTime);
 
             if (actorA.IsMoveRunning && actorB.IsMoveRunning
-                && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
+                                     && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
             {
                 ExchangeInfo exchange = ResolveExchange(actorA, actorB);
-                if (exchange.result == ExchangeResult.ABlocksB || exchange.result == ExchangeResult.BBlocksA || exchange.result == ExchangeResult.AHitsB || exchange.result == ExchangeResult.BHitsA || exchange.result == ExchangeResult.Clash)
+                if (exchange.result == ExchangeResult.ABlocksB || exchange.result == ExchangeResult.BBlocksA ||
+                    exchange.result == ExchangeResult.AHitsB || exchange.result == ExchangeResult.BHitsA ||
+                    exchange.result == ExchangeResult.Clash)
                 {
                     Debug.Log(exchange.result);
                 }
+
                 ApplyExchange(exchange);
             }
 
@@ -116,13 +119,13 @@ namespace Scripts
 
             switch (mode)
             {
-
                 case FacingMode.AutoFaceTarget:
                     actor.FaceTowards(target.Position);
                     if (actor.TryConsumeStartFacing())
                     {
                         actor.SyncMoveStartFacing();
                     }
+
                     return;
 
                 case FacingMode.LockCurrentFacing:
@@ -134,6 +137,7 @@ namespace Scripts
                         actor.FaceTowards(target.Position);
                         actor.SyncMoveStartFacing();
                     }
+
                     return;
 
                 case FacingMode.UseActorDefault:
@@ -195,6 +199,7 @@ namespace Scripts
                     return 0f;
             }
         }
+
         private void ApplyMovement(float deltaTime)
         {
             if (actorA == null || actorB == null || deltaTime <= 0f)
@@ -277,6 +282,7 @@ namespace Scripts
             float moveAmount = Mathf.Min(speed * deltaTime, remaining);
             actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
         }
+
         private static void MoveToward(Actor actor, float targetX, float progress)
         {
             float startX = actor.MoveStartPosition.x;
@@ -293,23 +299,54 @@ namespace Scripts
 
             bool startedA = false;
             bool startedB = false;
+            bool AcanStartNow = false;
+            bool BcanStartNow = false;
 
-            if (ShouldBlockStartA())
+            if (actorA.QueueCount > 0)
             {
-                ConsumeStopTurnA();
+                if (actorA.ActionController.nextMove.UsesForce && !actorA.GettingForce && !actorA.GettingForceFinished)
+                {
+                    actorA.StartGettingForce();
+                }
+
+                if ((!actorA.GettingForce && actorA.GettingForceFinished) || !actorA.ActionController.nextMove.UsesForce)
+                {
+                    AcanStartNow = true;
+                }
             }
             else
             {
-                startedA = actorA.TryStartNextMove(SelectForce, this.combatContext);
+                actorA.ActionController.FillQueue(actorA.Current.move);
             }
 
-            if (ShouldBlockStartB())
+            if (actorB.QueueCount > 0)
             {
-                ConsumeStopTurnB();
+                BcanStartNow = true;
             }
             else
             {
-                startedB = actorB.TryStartNextMove(SelectForce, this.combatContext);
+                actorB.ActionController.FillQueue(actorB.Current.move);
+            }
+
+            if (AcanStartNow && BcanStartNow)
+            {
+                if (ShouldBlockStartA())
+                {
+                    ConsumeStopTurnA();
+                }
+                else
+                {
+                    startedA = actorA.TryStartNextMove(SelectForce, this.combatContext);
+                }
+
+                if (ShouldBlockStartB())
+                {
+                    ConsumeStopTurnB();
+                }
+                else
+                {
+                    startedB = actorB.TryStartNextMove(SelectForce, this.combatContext);
+                }
             }
 
             // 상대가 새 Move를 시작하면 다음 정지 턴을 소비할 수 있게 윈도우를 리셋한다.
@@ -483,7 +520,7 @@ namespace Scripts
             MoveRuntime aState = actorA.Current;
             MoveRuntime bState = actorB.Current;
 
-            var aStance = aState.move != null && exchange.hitboxA !=null
+            var aStance = aState.move != null && exchange.hitboxA != null
                 ? (int)(aState.move.getStanceDamage(aState.force) * exchange.hitboxA.StanceCoef)
                 : 0;
             Debug.Log(bState.move);
@@ -521,13 +558,14 @@ namespace Scripts
                     {
                         bState.move.OnClash(actorB, context);
                     }
+
                     aState.move.OnAttack(actorA, context);
                     bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 
-                    actorA.ApplyStanceDamage((int)(context.targetStanceDamage*clashDecrease));
-                    actorB.ApplyStanceDamage((int)(context.userStanceDamage*clashDecrease));
+                    actorA.ApplyStanceDamage((int)(context.targetStanceDamage * clashDecrease));
+                    actorB.ApplyStanceDamage((int)(context.userStanceDamage * clashDecrease));
                     break;
 
                 case ExchangeResult.ABlocksB:
@@ -549,7 +587,8 @@ namespace Scripts
                 case ExchangeResult.AHitsB:
                     aState.move.OnAttack(actorA, context);
                     DisableHitbox(exchange.hitboxA);
-                    context.userHpDamage = Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
+                    context.userHpDamage =
+                        Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
                     actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorB.ApplyHpDamage(context.userHpDamage);
                     break;
@@ -557,7 +596,8 @@ namespace Scripts
                 case ExchangeResult.BHitsA:
                     bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxB);
-                    context.targetHpDamage = Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
+                    context.targetHpDamage =
+                        Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
                     actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorA.ApplyHpDamage(context.targetHpDamage);
                     break;
@@ -577,7 +617,8 @@ namespace Scripts
             return lhs.IsTouching(rhs);
         }
 
-        private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body, out Hitbox touchingHitbox)
+        private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body,
+            out Hitbox touchingHitbox)
         {
             touchingHitbox = null;
             if (body == null || hitboxes == null)
@@ -680,13 +721,13 @@ namespace Scripts
             var apower = context.user.Current.move.getPower(aforce);
             var bpower = context.target.Current.move.getPower(bforce);
 
-            var diff=Mathf.Abs(apower-bpower);
+            var diff = Mathf.Abs(apower - bpower);
             var coef = l * (diff + c) / (diff + d);
-            
+
             return new KnockbackSpeeds()
             {
-                speedA = bpower*coef,
-                speedB = apower*coef,
+                speedA = bpower * coef,
+                speedB = apower * coef,
             };
         }
 

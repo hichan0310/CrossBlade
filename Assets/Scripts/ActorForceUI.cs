@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +10,7 @@ namespace Scripts
         [SerializeField] private SpriteRenderer[] pips = new SpriteRenderer[5];
         [SerializeField] private Color activeColor = Color.white;
         [SerializeField] private Color inactiveColor = new Color(1f, 1f, 1f, 0.2f);
+        
 
         private void Reset()
         {
