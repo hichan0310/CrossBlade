@@ -486,10 +486,10 @@ namespace Scripts
             var bStance = bState.move != null && exchange.hitboxB != null
                 ? (int)(bState.move.getStanceDamage(bState.force) * exchange.hitboxB.StanceCoef)
                 : 0;
-            var aDamage = exchange.hitboxA != null && exchange.hitboxA != null
+            var aDamage = aState.move != null && exchange.hitboxA != null
                 ? (int)(aState.move.getDamage(aState.force) * exchange.hitboxA.DamageCoef)
                 : 0;
-            var bDamage = exchange.hitboxB != null && exchange.hitboxB != null
+            var bDamage = bState.move != null && exchange.hitboxB != null
                 ? (int)(bState.move.getDamage(bState.force) * exchange.hitboxB.DamageCoef)
                 : 0;
 
