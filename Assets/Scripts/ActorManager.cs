@@ -39,11 +39,10 @@ namespace Scripts
         [Header("Defaults")]
         [Range(1, 5)] public int defaultForce = 3;
 
-        [Header("Knockback")]
-        [Min(0f)] public float baseKnockbackSpeed = 0.5f;
-        [Min(0f)] public float stanceDamageToKnockback = 0.15f;
-        [Min(0f)] public float hpDamageToKnockback = 0.10f;
-        [Min(0f)] public float maxKnockbackSpeed = 8f;
+        [Header("Knockback")] 
+        [SerializeField] private float c;
+        [SerializeField] private float d;
+        [SerializeField] private float l;
         [Min(0f)] public float knockbackFriction = 10f;
 
         [Header("Turn Stop (Debug)")]
@@ -656,19 +655,20 @@ namespace Scripts
 
         private KnockbackSpeeds CalculateKnockbackSpeeds(CombatContext context)
         {
-            float speedA = baseKnockbackSpeed
-                + (context.targetHpDamage * hpDamageToKnockback)
-                + (context.targetStanceDamage * stanceDamageToKnockback)
-                - context.user.KnockbackResistance;
-            float speedB = baseKnockbackSpeed
-                + (context.userHpDamage * hpDamageToKnockback)
-                + (context.userStanceDamage * stanceDamageToKnockback)
-                - context.target.KnockbackResistance;
+            var aforce = context.user.Current.force;
+            var bforce = context.target.Current.force;
 
-            KnockbackSpeeds result;
-            result.speedA = Mathf.Clamp(speedA, 0f, maxKnockbackSpeed);
-            result.speedB = Mathf.Clamp(speedB, 0f, maxKnockbackSpeed);
-            return result;
+            var apower = context.user.Current.move.getPower(aforce);
+            var bpower = context.target.Current.move.getPower(bforce);
+
+            var diff=Mathf.Abs(apower-bpower);
+            var coef = l * (diff + c) / (diff + d);
+            
+            return new KnockbackSpeeds()
+            {
+                speedA = bpower*coef,
+                speedB = apower*coef,
+            };
         }
 
         private void ApplyKnockback(KnockbackSpeeds speeds)

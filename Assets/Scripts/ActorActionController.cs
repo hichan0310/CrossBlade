@@ -263,7 +263,7 @@ namespace Scripts
                 queued.forceCarryIn = interruptedQueuedMove.forceCarryOut;
             }
 
-            StartMove(queued, interrupted.selectedForce, combatContext);
+            StartMove(queued, 0, combatContext);
         }
 
         internal void MarkCurrentMoveExchanged()
@@ -300,7 +300,7 @@ namespace Scripts
 
             queued.forceCarryIn = carriedForce;
             _currentQueuedMove = queued;
-            _current = new MoveRuntime(runtimeMove, selectedForce, selectedForce + carriedForce);
+            _current = new MoveRuntime(runtimeMove, selectedForce + carriedForce);
             _hasCurrent = true;
             _currentMoveExchanged = false;
             _moveStartupRemaining = _owner.MoveStartDelay;

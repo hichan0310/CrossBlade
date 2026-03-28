@@ -54,6 +54,7 @@ namespace Scripts
             if (!instance.name.EndsWith("__DYING", StringComparison.Ordinal))
             {
                 instance.name += "__DYING";
+                // debugging
             }
 
             if (_currentMoveInstance == instance)

@@ -60,8 +60,10 @@ namespace Scripts
         [SerializeField, Min(0.01f)] private float duration = 0.30f;
 
         [Header("Combat")] 
-        [SerializeField, Min(0f)] private float knockbackResistance;
-        [SerializeField, Min(0)] private int stanceDamageResistance;
+        [SerializeField, Min(0f)] private float damageBase;
+        [SerializeField, Min(0f)] private float damagePerPower;
+        [SerializeField, Min(0f)] private float stanceDamageBase;
+        [SerializeField, Min(0f)] private float stanceDamagePerPower;
 
         [Header("Graph")]
         [SerializeField] private Move hitMove;
@@ -106,8 +108,6 @@ namespace Scripts
         internal string MoveId => moveId;
         internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
-        internal float KnockbackResistance => knockbackResistance;
-        internal int StanceDamageResistance => stanceDamageResistance;
         internal Move HitMove => hitMove;
         internal Move GuardMove => guardMove;
         internal IList<Move> After => after;
@@ -120,6 +120,21 @@ namespace Scripts
         internal virtual int StanceRecovery => 0;
         
         [SerializeField] private List<MoveEffects> onAttackEffects;
+
+        internal int getPower(int force)
+        {
+            return force;
+        }
+
+        internal float getDamage(int power)
+        {
+            return damageBase + damagePerPower*power;
+        }
+
+        internal float getStanceDamage(int power)
+        {
+            return stanceDamageBase + stanceDamagePerPower*power;
+        }
 
 
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)

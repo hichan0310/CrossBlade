@@ -36,14 +36,12 @@ namespace Scripts
     public struct MoveRuntime
     {
         public Move move;
-        public int selectedForce;
         public int force;
         public float elapsed;
 
-        public MoveRuntime(Move move, int selectedForce, int force)
+        public MoveRuntime(Move move, int force)
         {
             this.move = move;
-            this.selectedForce = Mathf.Clamp(selectedForce, 1, 5);
             this.force = force;
             elapsed = 0f;
         }
@@ -89,7 +87,6 @@ namespace Scripts
         [SerializeField] private int stance = 100;
         [SerializeField] private int maxSpecialForce = 20;
         [SerializeField] private int specialForce;
-        [SerializeField, Min(0f)] private float knockbackResistance = 0f;
 
         [Header("Chain")]
         [SerializeField, Min(0f)] private float chainStepBonus = 0.05f;
@@ -123,11 +120,11 @@ namespace Scripts
         internal bool CanGuard => IsMoveRunning && !IsGuardBroken && CurrentMoveInstance != null && CurrentMoveInstance.Guardable;
         internal Vector2 Position => body != null ? body.position : (Vector2)transform.position;
         internal float ChainMultiplier => Mathf.Min(1f + ((actionController != null ? actionController.ChainCount : 0) * chainStepBonus), chainMaxMultiplier);
-        internal float KnockbackResistance => knockbackResistance + (CurrentMoveInstance != null ? CurrentMoveInstance.KnockbackResistance : 0f);
         internal int SpecialForce => specialForce;
         internal IList<Hitbox> weaponHitboxes => CurrentMoveInstance != null ? CurrentMoveInstance.WeaponHitboxes : Array.Empty<Hitbox>();
         internal Collider2D bodyCollider => CurrentMoveInstance != null ? CurrentMoveInstance.BodyCollider : null;
-
+        internal ActorActionController  ActionController => actionController;
+        
         internal string ActorId => actorId;
         internal int Hp => hp;
         internal int MaxHp => maxHp;
@@ -268,8 +265,7 @@ namespace Scripts
 
         internal void ApplyStanceDamage(int amount)
         {
-            int reduced = Mathf.Max(0, amount - (CurrentMoveInstance != null ? CurrentMoveInstance.StanceDamageResistance : 0));
-            stance = Mathf.Max(0, stance - reduced);
+            stance = Mathf.Max(0, stance - amount);
         }
 
         internal void RecoverStance(int amount)
