@@ -289,12 +289,11 @@ namespace Scripts
             int selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = _owner.CreateMoveInstanceFromAction(sourceMove);
-            _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             if (runtimeMove == null)
             {
                 return false;
             }
-
+            _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             int carriedForce = _carriedForce;
             _carriedForce = 0;
 
