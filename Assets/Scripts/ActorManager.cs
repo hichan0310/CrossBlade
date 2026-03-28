@@ -37,7 +37,6 @@ namespace Scripts
         public bool autoSimulate = true;
 
         [Header("Defaults")]
-        [Range(1, 5)] public int defaultForce = 3;
 
         [Header("Knockback")] 
         [SerializeField] private float c;
@@ -417,7 +416,12 @@ namespace Scripts
 
         public int SelectForce(Actor actor, Move move)
         {
-            return defaultForce;
+            if (actor != null && move != null && move.UsesForce)
+            {
+                return actor.ConsumePendingForce();
+            }
+
+            return 0;
         }
 
         private ExchangeInfo ResolveExchange(Actor a, Actor b)

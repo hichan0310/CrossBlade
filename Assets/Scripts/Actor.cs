@@ -87,6 +87,7 @@ namespace Scripts
         [SerializeField] private int stance = 100;
         [SerializeField] private int maxSpecialForce = 20;
         [SerializeField] private int specialForce;
+        [SerializeField, Range(1, 5)] private int pendingForce = 1;
 
         [Header("Chain")]
         [SerializeField, Min(0f)] private float chainStepBonus = 0.05f;
@@ -104,6 +105,30 @@ namespace Scripts
 
         [Header("Debug")]
         [SerializeField] private float moveStartDelay = 0.1f;
+
+        internal int PendingForce => pendingForce;
+        internal bool CanIncreasePendingForce()
+        {
+            return !IsMoveRunning && pendingForce < 5;
+        }
+
+        internal bool TryIncreasePendingForce()
+        {
+            if (!CanIncreasePendingForce())
+            {
+                return false;
+            }
+
+            pendingForce++;
+            return true;
+        }
+
+        internal int ConsumePendingForce()
+        {
+            int value = Mathf.Clamp(pendingForce, 1, 5);
+            pendingForce = 1;
+            return value;
+        }
 
         private Vector2 _recoilVelocity;
         private float _recoilFriction;

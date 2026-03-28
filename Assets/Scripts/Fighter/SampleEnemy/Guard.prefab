@@ -106,12 +106,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Guard
-  category: 0
+  category: 3
   weaponHitboxes: []
   bodyCollider: {fileID: 290011102922610807}
   duration: 0.4
-  knockbackResistance: 1
-  stanceDamageResistance: 0
+  damageBase: 0
+  damagePerPower: 0
+  stanceDamageBase: 0
+  stanceDamagePerPower: 0
   hitMove: {fileID: 4863790163555513521, guid: 688df75aaf5cf5d82acd2cf66da4d0f3, type: 3}
   guardMove: {fileID: 6141492211270888958}
   after:
@@ -128,6 +130,7 @@ MonoBehaviour:
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 0}
+  showPreviousVisual: 0
   onAttackEffects: []
 --- !u!61 &290011102922610807
 BoxCollider2D:

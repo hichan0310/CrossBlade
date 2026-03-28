@@ -19,6 +19,7 @@ namespace Scripts
         private Vector2 _moveStartPosition;
         private int _moveStartFacingSign = 1;
         private bool _startFacingConsumed;
+        private int selectedForce = 0;
 
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
@@ -78,6 +79,7 @@ namespace Scripts
                 return Mathf.Clamp01((startupElapsed + activeElapsed) / totalDuration);
             }
         }
+        
 
         internal void Initialize(Actor owner)
         {
@@ -286,7 +288,7 @@ namespace Scripts
                 _owner.ReleaseMoveInstanceFromAction(_owner.CurrentMoveVisual);
             }
 
-            int selectedForce = Mathf.Clamp(inputForce, 1, 5);
+            selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
             Move runtimeMove = _owner.CreateMoveInstanceFromAction(sourceMove);
             if (runtimeMove == null)
@@ -314,14 +316,16 @@ namespace Scripts
 
             _owner.ApplyMoveStartStanceCostFromAction(runtimeMove);
             _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
-            _owner.GainSpecialForce(selectedForce);
-
             return true;
         }
 
         private void FinishCurrentMove()
         {
             MoveRuntime finished = _current;
+            if (finished.move != null && finished.move.UsesForce)
+            {
+                _owner.GainSpecialForce(selectedForce);
+            }
             QueuedMove finishedQueuedMove = _currentQueuedMove;
             Move finishedSourceMove = finishedQueuedMove != null ? finishedQueuedMove.move : finished.move;
 

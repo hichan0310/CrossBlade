@@ -5022,7 +5022,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Hitbox
   hitboxCollider: {fileID: 5161073269282670933}
-  baseTrueDamage: 0
+  damageCoef: 1
+  stanceCoef: 1
 --- !u!1 &8061099090718330702
 GameObject:
   m_ObjectHideFlags: 0
@@ -5177,7 +5178,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Attack
-  category: 0
+  category: 1
   weaponHitboxes:
   - {fileID: 3065647985541362149}
   bodyCollider: {fileID: 7684198896372128912}
@@ -5202,6 +5203,6 @@ MonoBehaviour:
   delayVisualReveal: 1
   visualRevealProgress: 0.696
   visualRoot: {fileID: 3510763679438800581}
-  showPreviousVisual: 1
+  showPreviousVisual: 0
   onAttackEffects:
   - {fileID: 8122564645124299528}
