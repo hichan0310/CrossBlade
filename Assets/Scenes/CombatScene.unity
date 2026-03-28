@@ -2827,7 +2827,7 @@ MonoBehaviour:
   defaultForce: 3
   c: 3
   d: 5
-  l: 0
+  l: 5
   knockbackFriction: 10
   clashDecrease: 0.3
   stopTurnsA: 0
