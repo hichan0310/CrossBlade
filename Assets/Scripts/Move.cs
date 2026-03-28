@@ -114,8 +114,7 @@ namespace Scripts
         internal bool Guardable => guardable;
         internal bool SkipAdditionalInterruptFollowUp => skipAdditionalInterruptFollowUp;
         internal virtual float Duration => duration;
-        internal virtual int Damage => 0;
-        internal virtual int StanceDamage => 0;
+        
         internal virtual int StanceCost => 0;
         internal virtual int StanceRecovery => 0;
         

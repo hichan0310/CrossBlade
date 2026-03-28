@@ -2825,11 +2825,11 @@ MonoBehaviour:
   actorB: {fileID: 2119092438}
   autoSimulate: 1
   defaultForce: 3
-  baseKnockbackSpeed: 0.5
-  stanceDamageToKnockback: 0.15
-  hpDamageToKnockback: 0.1
-  maxKnockbackSpeed: 8
+  c: 3
+  d: 5
+  l: 0
   knockbackFriction: 10
+  clashDecrease: 0.3
   stopTurnsA: 0
   stopTurnsB: 0
 --- !u!4 &595353366
@@ -5981,7 +5981,6 @@ MonoBehaviour:
   stance: 100
   maxSpecialForce: 20
   specialForce: 0
-  knockbackResistance: 0
   chainStepBonus: 0.05
   chainMaxMultiplier: 1.5
   body: {fileID: 1796795475}
@@ -6137,7 +6136,6 @@ MonoBehaviour:
   stance: 100
   maxSpecialForce: 20
   specialForce: 0
-  knockbackResistance: 0
   chainStepBonus: 0.05
   chainMaxMultiplier: 1.5
   body: {fileID: 2119092440}

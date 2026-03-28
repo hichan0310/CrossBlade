@@ -44,6 +44,7 @@ namespace Scripts
         [SerializeField] private float d;
         [SerializeField] private float l;
         [Min(0f)] public float knockbackFriction = 10f;
+        [SerializeField] private float clashDecrease;
 
         [Header("Turn Stop (Debug)")]
         [SerializeField, Min(0)] private int stopTurnsA;
@@ -478,16 +479,30 @@ namespace Scripts
             MoveRuntime aState = actorA.Current;
             MoveRuntime bState = actorB.Current;
 
+            var aStance = aState.move != null && exchange.hitboxA !=null
+                ? (int)(aState.move.getStanceDamage(aState.force) * exchange.hitboxA.StanceCoef)
+                : 0;
+            Debug.Log(bState.move);
+            var bStance = bState.move != null && exchange.hitboxB != null
+                ? (int)(bState.move.getStanceDamage(bState.force) * exchange.hitboxB.StanceCoef)
+                : 0;
+            var aDamage = exchange.hitboxA != null && exchange.hitboxA != null
+                ? (int)(aState.move.getDamage(aState.force) * exchange.hitboxA.DamageCoef)
+                : 0;
+            var bDamage = exchange.hitboxB != null && exchange.hitboxB != null
+                ? (int)(bState.move.getDamage(bState.force) * exchange.hitboxB.DamageCoef)
+                : 0;
+
             CombatContext context = new CombatContext
             {
                 user = actorA,
                 target = actorB,
                 manager = this,
                 exchangeResult = exchange.result,
-                userStanceDamage = aState.move != null ? aState.move.StanceDamage : 0,
-                targetStanceDamage = bState.move != null ? bState.move.StanceDamage : 0,
-                userHpDamage = exchange.hitboxA != null ? Mathf.RoundToInt(exchange.hitboxA.trueDamage * actorA.ChainMultiplier) : 0,
-                targetHpDamage = exchange.hitboxB != null ? Mathf.RoundToInt(exchange.hitboxB.trueDamage * actorB.ChainMultiplier) : 0
+                userStanceDamage = aStance,
+                targetStanceDamage = bStance,
+                userHpDamage = aDamage,
+                targetHpDamage = bDamage,
             };
 
             switch (exchange.result)
@@ -507,8 +522,8 @@ namespace Scripts
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 
-                    actorA.ApplyStanceDamage(context.targetStanceDamage);
-                    actorB.ApplyStanceDamage(context.userStanceDamage);
+                    actorA.ApplyStanceDamage((int)(context.targetStanceDamage*clashDecrease));
+                    actorB.ApplyStanceDamage((int)(context.userStanceDamage*clashDecrease));
                     break;
 
                 case ExchangeResult.ABlocksB:

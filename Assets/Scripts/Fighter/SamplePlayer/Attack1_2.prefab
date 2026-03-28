@@ -5182,8 +5182,10 @@ MonoBehaviour:
   - {fileID: 3065647985541362149}
   bodyCollider: {fileID: 7684198896372128912}
   duration: 0.3
-  knockbackResistance: 0
-  stanceDamageResistance: 0
+  damageBase: 10
+  damagePerPower: 10
+  stanceDamageBase: 10
+  stanceDamagePerPower: 10
   hitMove: {fileID: 6858759112779511426, guid: 4030d37d891ad30fbba24205847de33a, type: 3}
   guardMove: {fileID: 2602544448145009053, guid: 736770d66de59dbd68ebde8fb0ee7efe, type: 3}
   after:

@@ -205,8 +205,10 @@ MonoBehaviour:
   - {fileID: 6095507457630073204}
   bodyCollider: {fileID: 3776050730826727912}
   duration: 0.3
-  knockbackResistance: 2
-  stanceDamageResistance: 0
+  damageBase: 10
+  damagePerPower: 10
+  stanceDamageBase: 10
+  stanceDamagePerPower: 10
   hitMove: {fileID: 4863790163555513521, guid: 688df75aaf5cf5d82acd2cf66da4d0f3, type: 3}
   guardMove: {fileID: 6141492211270888958, guid: df940867274b6f3a3a8bdf6246244e8a, type: 3}
   after:
@@ -224,6 +226,7 @@ MonoBehaviour:
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 0}
+  showPreviousVisual: 0
   onAttackEffects: []
 --- !u!61 &3776050730826727912
 BoxCollider2D:
