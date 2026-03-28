@@ -92,7 +92,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Hitbox
   hitboxCollider: {fileID: 2281021641308730781}
-  baseTrueDamage: 0
+  damageCoef: 1
+  stanceCoef: 1
 --- !u!1 &8125855545336471893
 GameObject:
   m_ObjectHideFlags: 0
@@ -200,7 +201,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Attack
-  category: 0
+  category: 1
   weaponHitboxes:
   - {fileID: 6095507457630073204}
   bodyCollider: {fileID: 3776050730826727912}

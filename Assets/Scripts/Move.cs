@@ -92,6 +92,9 @@ namespace Scripts
         [SerializeField] private Transform visualRoot;
         [SerializeField] private bool showPreviousVisual = false;
 
+        internal MoveCategory Category => category;
+        internal bool UsesForce => category == MoveCategory.Attack;
+
         internal bool DelayVisualReveal => delayVisualReveal;
         internal float VisualRevealProgress => visualRevealProgress;
         internal Transform VisualRoot => visualRoot;
