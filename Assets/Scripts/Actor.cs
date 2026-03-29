@@ -161,8 +161,9 @@ namespace Scripts
             }
         }
 
-        private Vector2 _recoilVelocity;
+        [SerializeField] internal Vector2 _recoilVelocity;
         private float _recoilFriction;
+        [SerializeField, Min(0f)] private float recoilStopEpsilon = 0.02f;
         private float _nextAttackDamageMultiplier = 1f;
 
         private Move CurrentMoveInstance => visualController != null ? visualController.CurrentMoveInstance : null;
@@ -420,8 +421,21 @@ namespace Scripts
             Vector2 delta = _recoilVelocity * deltaTime;
             SetActorPosition(Position + delta);
 
-            float speed = Mathf.MoveTowards(_recoilVelocity.magnitude, 0f, _recoilFriction * deltaTime);
-            _recoilVelocity = speed > 0f ? _recoilVelocity.normalized * speed : Vector2.zero;
+            var coef=Mathf.Max(1f, _recoilVelocity.magnitude);
+            float speed = Mathf.MoveTowards(_recoilVelocity.magnitude, 0f, coef*_recoilFriction * deltaTime);
+            if (speed <= recoilStopEpsilon)
+            {
+                _recoilVelocity = Vector2.zero;
+
+                if (body != null)
+                {
+                    body.linearVelocity = Vector2.zero;
+                }
+
+                return;
+            }
+
+            _recoilVelocity = _recoilVelocity.normalized * speed;
         }
 
         internal void ApplyRecoilFromActionController(float deltaTime)

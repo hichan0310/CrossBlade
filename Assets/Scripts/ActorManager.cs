@@ -297,6 +297,11 @@ namespace Scripts
                 return;
             }
 
+            if (actorA._recoilVelocity.sqrMagnitude > 0f || actorB._recoilVelocity.sqrMagnitude > 0f)
+            {
+                return;
+            }
+
             bool startedA = false;
             bool startedB = false;
             bool AcanStartNow = false;
@@ -401,7 +406,10 @@ namespace Scripts
             }
 
             // 턴 사이사이 개입만 허용한다.
-            return !actorA.IsMoveRunning && !actorB.IsMoveRunning;
+            return !actorA.IsMoveRunning
+                && !actorB.IsMoveRunning
+                && actorA._recoilVelocity.sqrMagnitude <= 0f
+                && actorB._recoilVelocity.sqrMagnitude <= 0f;
         }
 
         public bool TryUseSpecialSkill(SpecialSkill skill, Actor user, Actor target)

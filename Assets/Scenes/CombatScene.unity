@@ -3009,7 +3009,7 @@ MonoBehaviour:
   c: 3
   d: 5
   l: 5
-  knockbackFriction: 10
+  knockbackFriction: 8
   clashDecrease: 0.3
   stopTurnsA: 0
   stopTurnsB: 0
@@ -7024,10 +7024,12 @@ MonoBehaviour:
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
   moveStartDelay: 0.1
-  inputDuration: 0.1
+  inputDuration: 0.5
   gettingForce: 0
   gettingForceFinished: 0
   gettingForceTimer: 0
+  _recoilVelocity: {x: 0, y: 0}
+  recoilStopEpsilon: 0.02
 --- !u!4 &1796795474
 Transform:
   m_ObjectHideFlags: 0
@@ -7370,6 +7372,8 @@ MonoBehaviour:
   gettingForce: 0
   gettingForceFinished: 0
   gettingForceTimer: 0
+  _recoilVelocity: {x: 0, y: 0}
+  recoilStopEpsilon: 0.02
 --- !u!4 &2119092439
 Transform:
   m_ObjectHideFlags: 0

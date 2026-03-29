@@ -208,6 +208,11 @@ namespace Scripts
                 return "Fighting";
             }
 
+            if (playerActor._recoilVelocity.sqrMagnitude > 0f || enemyActor._recoilVelocity.sqrMagnitude > 0f)
+            {
+                return "Fighting";
+            }
+
             return "Ready";
         }
 
