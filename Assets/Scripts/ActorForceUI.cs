@@ -22,21 +22,36 @@ namespace Scripts
 
         private void LateUpdate()
         {
-            if (actor == null || pips == null)
+            if (actor.GettingForce && !actor.GettingForceFinished)
             {
-                return;
-            }
-
-            int force = Mathf.Clamp(actor.PendingForce, 1, 5);
-
-            for (int i = 0; i < pips.Length; i++)
-            {
-                if (pips[i] == null)
+                foreach (SpriteRenderer pip in pips)
                 {
-                    continue;
+                    pip.gameObject.SetActive(true);
+                }
+                
+                if (actor == null || pips == null)
+                {
+                    return;
                 }
 
-                pips[i].color = i < force ? activeColor : inactiveColor;
+                int force = Mathf.Clamp(actor.PendingForce, 1, 5);
+
+                for (int i = 0; i < pips.Length; i++)
+                {
+                    if (pips[i] == null)
+                    {
+                        continue;
+                    }
+
+                    pips[i].color = i < force ? activeColor : inactiveColor;
+                }
+            }
+            else
+            {
+                foreach (SpriteRenderer pip in pips)
+                {
+                    pip.gameObject.SetActive(false);
+                }
             }
         }
     }
