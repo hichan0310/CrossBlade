@@ -1,28 +1,21 @@
-using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Scripts.Story
 {
-    public class StoryObject:ScriptableObject
+    public class StoryObject:MonoBehaviour
     {
-        public void WaitClick()
+        public class StoryRunner : MonoBehaviour
         {
-            
-        }
+            public void RunStory(StoryViewChain chain, StoryObject sto)
+            {
+                StartCoroutine(Run(chain, sto));
+            }
 
-        public void WaitSecond()
-        {
-            
-        }
-        
-        [CanBeNull] public string WaitAnswer(string[]  answers)
-        {
-            return null;
-        }
-        
-        public bool ActionFinished()
-        {
-            return true;
+            private System.Collections.IEnumerator Run(StoryViewChain chain, StoryObject sto)
+            {
+                chain.Execute(sto);
+                yield return new WaitUntil(() => chain.Finished());
+            }
         }
     }
 }
