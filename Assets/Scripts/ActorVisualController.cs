@@ -51,7 +51,7 @@ namespace Scripts
                 return;
             }
 
-            if (!instance.name.EndsWith("__DYING", StringComparison.Ordinal))
+            if (!instance.name.Contains("__DYING"))
             {
                 instance.name += "__DYING";
                 // debugging

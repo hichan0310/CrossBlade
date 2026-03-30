@@ -613,8 +613,7 @@ namespace Scripts
             {
                 return false;
             }
-
-            return lhs.IsTouching(rhs);
+            return lhs.bounds.Intersects(rhs.bounds);
         }
 
         private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body,
