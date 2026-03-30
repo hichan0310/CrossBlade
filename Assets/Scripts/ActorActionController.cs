@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Scripts
@@ -20,7 +21,7 @@ namespace Scripts
         private int _moveStartFacingSign = 1;
         private bool _startFacingConsumed;
         private int selectedForce = 0;
-
+        private Move _currentSourceMove;
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
@@ -227,11 +228,12 @@ namespace Scripts
 
             MoveRuntime interrupted = _current;
             QueuedMove interruptedQueuedMove = _currentQueuedMove;
-            Move interruptedSourceMove = interruptedQueuedMove != null ? interruptedQueuedMove.move : interrupted.move;
+            Move interruptedSourceMove = _currentSourceMove;
             Move next = null;
 
             _hasCurrent = false;
             _currentQueuedMove = null;
+            _currentSourceMove = null;
             _carriedForce = 0;
             _currentMoveExchanged = false;
             _moveStartupRemaining = 0f;
@@ -296,6 +298,7 @@ namespace Scripts
             {
                 return false;
             }
+            _currentSourceMove = sourceMove;
             _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             int carriedForce = _carriedForce;
             _carriedForce = 0;
@@ -328,10 +331,12 @@ namespace Scripts
                 _owner.GainSpecialForce(selectedForce);
             }
             QueuedMove finishedQueuedMove = _currentQueuedMove;
-            Move finishedSourceMove = finishedQueuedMove != null ? finishedQueuedMove.move : finished.move;
+            Move finishedSourceMove = _currentSourceMove;
 
             _hasCurrent = false;
+
             _currentQueuedMove = null;
+            _currentSourceMove = null;
             _currentMoveExchanged = false;
             _moveStartupRemaining = 0f;
 
@@ -357,7 +362,7 @@ namespace Scripts
                 return;
             }
 
-            //FillQueue(finishedSourceMove);                        
+            FillQueue(finishedSourceMove);                        
         }
         
         public bool FillQueue(Move finishedSourceMove)
