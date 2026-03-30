@@ -123,6 +123,20 @@ namespace Scripts
         
         [SerializeField] private List<MoveEffects> onAttackEffects;
 
+        internal void BindGraphFromSource(Move source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            hitMove = source.hitMove;
+            guardMove = source.guardMove;
+            after = new List<Move>(source.after);
+            guardable = source.guardable;
+            skipAdditionalInterruptFollowUp = source.skipAdditionalInterruptFollowUp;
+        }
+
         internal int getPower(int force)
         {
             return force;

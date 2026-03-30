@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Scripts
@@ -22,6 +21,7 @@ namespace Scripts
         private bool _startFacingConsumed;
         private int selectedForce = 0;
         private Move _currentSourceMove;
+
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
@@ -293,12 +293,17 @@ namespace Scripts
 
             selectedForce = Mathf.Clamp(inputForce, 1, 5);
             Move sourceMove = queued.move;
+            if (sourceMove != null && (sourceMove.name.Contains("(Clone)") || sourceMove.name.Contains("__DYING")))
+            {
+                Debug.LogWarning($"[BAD MOVE SOURCE] {sourceMove.name}", sourceMove);
+            }
             Move runtimeMove = _owner.CreateMoveInstanceFromAction(sourceMove);
             if (runtimeMove == null)
             {
                 return false;
             }
             _currentSourceMove = sourceMove;
+            runtimeMove.BindGraphFromSource(sourceMove);
             _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             int carriedForce = _carriedForce;
             _carriedForce = 0;
@@ -334,7 +339,6 @@ namespace Scripts
             Move finishedSourceMove = _currentSourceMove;
 
             _hasCurrent = false;
-
             _currentQueuedMove = null;
             _currentSourceMove = null;
             _currentMoveExchanged = false;
@@ -360,18 +364,7 @@ namespace Scripts
             if (_queue.Count > 0 || finishedSourceMove == null || finishedSourceMove.After.Count <= 0)
             {
                 return;
-            }
-
-            FillQueue(finishedSourceMove);                        
-        }
-        
-        public bool FillQueue(Move finishedSourceMove)
-        {
-            int nextIndex = UnityEngine.Random.Range(0, finishedSourceMove.After.Count);
-            QueuedMove autoQueuedMove = new QueuedMove { move = finishedSourceMove.After[nextIndex] };
-            autoQueuedMove.forceCarryIn = _carriedForce;
-            _queue.Enqueue(autoQueuedMove);
-            return true;
+            }     
         }
     }
 }
