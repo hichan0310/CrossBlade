@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Scripts.CharAIs;
 using UnityEngine;
 
 namespace Scripts
@@ -87,7 +88,7 @@ namespace Scripts
         [SerializeField] private int stance = 100;
         [SerializeField] private int maxSpecialForce = 20;
         [SerializeField] private int specialForce;
-        [SerializeField, Range(1, 5)] private int pendingForce = 1;
+        [SerializeField, Range(1, 5)] public int pendingForce = 1;
 
         [Header("Chain")]
         [SerializeField, Min(0f)] private float chainStepBonus = 0.05f;
@@ -107,7 +108,8 @@ namespace Scripts
         [SerializeField] private float moveStartDelay = 0.1f;
         
         [Header("Input")]
-        [SerializeField] private float inputDuration = 1f;
+        [SerializeField] private PlanMaker planMaker;
+        public PlanMaker PlanMaker => planMaker;
         
         [SerializeField] private bool gettingForce = false;
         public bool GettingForce => gettingForce;
@@ -118,8 +120,7 @@ namespace Scripts
         public void StartGettingForce()
         {
             gettingForce = true;
-            gettingForceTimer = inputDuration;
-            Debug.Log("StartGettingForce");
+            gettingForceTimer = planMaker is PlayerInputManager pim ? pim.inputDuration : 0.1f;
         }
 
         internal int PendingForce => pendingForce;
@@ -136,7 +137,7 @@ namespace Scripts
             }
 
             pendingForce++;
-            gettingForceTimer = inputDuration;
+            gettingForceTimer = planMaker is PlayerInputManager pim ? pim.inputDuration : 0.1f;
             return true;
         }
 

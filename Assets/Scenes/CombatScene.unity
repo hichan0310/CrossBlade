@@ -7024,7 +7024,7 @@ MonoBehaviour:
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4470579728955706483, guid: 7a7cf38075823d3c5ab47aca749bdd9a, type: 3}
   moveStartDelay: 0.1
-  inputDuration: 0.5
+  planMaker: {fileID: 11400000, guid: 07f995d0c813094b8b233060405383d6, type: 2}
   gettingForce: 0
   gettingForceFinished: 0
   gettingForceTimer: 0
@@ -7368,7 +7368,7 @@ MonoBehaviour:
   positiveScaleFacesRight: 0
   initialMove: {fileID: 4321802175857072457, guid: 922d1e15bc8e10eeba96020d842fe387, type: 3}
   moveStartDelay: 0.1
-  inputDuration: 0.1
+  planMaker: {fileID: 11400000, guid: 02f79f0f59ac557a1a13c53ffb4f53d0, type: 2}
   gettingForce: 0
   gettingForceFinished: 0
   gettingForceTimer: 0

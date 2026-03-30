@@ -219,6 +219,7 @@ namespace Scripts
         public void OnPlayerAttack()
         {
             EnqueueMove(playerActor, playerAttack);
+            Debug.Log("asdfasdf");
         }
 
         private void EnqueueMove(Actor actor, Move move)

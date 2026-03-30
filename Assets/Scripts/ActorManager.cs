@@ -309,28 +309,20 @@ namespace Scripts
 
             if (actorA.QueueCount > 0)
             {
-                if (actorA.ActionController.nextMove.UsesForce && !actorA.GettingForce && !actorA.GettingForceFinished)
-                {
-                    actorA.StartGettingForce();
-                }
-
-                if ((!actorA.GettingForce && actorA.GettingForceFinished) || !actorA.ActionController.nextMove.UsesForce)
-                {
-                    AcanStartNow = true;
-                }
+                AcanStartNow = actorA.PlanMaker.GetForce(actorA);
             }
             else
             {
-                actorA.ActionController.FillQueue(actorA.Current.move);
+                actorA.PlanMaker.GetPlan(actorA);
             }
 
             if (actorB.QueueCount > 0)
             {
-                BcanStartNow = true;
+                BcanStartNow = actorB.PlanMaker.GetForce(actorB);
             }
             else
             {
-                actorB.ActionController.FillQueue(actorB.Current.move);
+                actorB.PlanMaker.GetPlan(actorB);
             }
 
             if (AcanStartNow && BcanStartNow)
