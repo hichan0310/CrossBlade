@@ -64,6 +64,9 @@ namespace Scripts
         [SerializeField, Min(0f)] private float damagePerPower;
         [SerializeField, Min(0f)] private float stanceDamageBase;
         [SerializeField, Min(0f)] private float stanceDamagePerPower;
+        [SerializeField, Min(0f)] private int stanceRecovery;
+        [SerializeField, Min(0f)] private float stanceUsageBase;
+        [SerializeField, Min(0f)] private float stanceUsagePerPower;
 
         [Header("Graph")]
         [SerializeField] private Move hitMove;
@@ -117,9 +120,7 @@ namespace Scripts
         internal bool Guardable => guardable;
         internal bool SkipAdditionalInterruptFollowUp => skipAdditionalInterruptFollowUp;
         internal virtual float Duration => duration;
-        
-        internal virtual int StanceCost => 0;
-        internal virtual int StanceRecovery => 0;
+        internal virtual int StanceRecovery => stanceRecovery;
         
         [SerializeField] private List<MoveEffects> onAttackEffects;
 
@@ -155,6 +156,8 @@ namespace Scripts
 
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
+            Actor actor = actorType == ActorType.Player ? combatContext.user : combatContext.target;
+            actor.ApplyStanceDamage((int)(force*stanceUsagePerPower+stanceUsageBase));
             foreach (Hitbox weaponHitbox in this.weaponHitboxes)
             {
                 weaponHitbox.Collider.enabled = true;

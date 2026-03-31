@@ -284,7 +284,7 @@ namespace Scripts
             {
                 return false;
             }
-
+            
             if (!_hasCurrent && _owner.CurrentMoveVisual != null && _owner.HasVisualController)
             {
                 _owner.CapturePreviousVisualSnapshotFromAction();
@@ -304,6 +304,7 @@ namespace Scripts
             }
             _currentSourceMove = sourceMove;
             runtimeMove.BindGraphFromSource(sourceMove);
+            //_owner.ApplyMoveStartStanceCostFromAction(runtimeMove);
             _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
             int carriedForce = _carriedForce;
             _carriedForce = 0;
@@ -323,7 +324,6 @@ namespace Scripts
             queued.Play(selectedForce, combatContext, _owner.Kind);
             queued.move = sourceMove;
 
-            _owner.ApplyMoveStartStanceCostFromAction(runtimeMove);
             _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
             return true;
         }
