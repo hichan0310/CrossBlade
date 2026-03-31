@@ -533,16 +533,6 @@ namespace Scripts
             visualController?.RefreshMoveVisualState(hasCurrent, moveProgress);
         }
 
-        internal void ApplyMoveStartStanceCostFromAction(Move runtimeMove)
-        {
-            if (runtimeMove == null)
-            {
-                return;
-            }
-
-            stance = Mathf.Max(0, stance - Mathf.Max(0, runtimeMove.StanceCost));
-        }
-
         internal void CapturePreviousVisualSnapshotFromAction()
         {
             visualController?.CapturePreviousVisualSnapshot();

@@ -156,8 +156,13 @@ MonoBehaviour:
   weaponHitboxes: []
   bodyCollider: {fileID: 214511258772443836}
   duration: 0.3
-  knockbackResistance: 0
-  stanceDamageResistance: 0
+  damageBase: 0
+  damagePerPower: 0
+  stanceDamageBase: 0
+  stanceDamagePerPower: 0
+  stanceRecovery: 10
+  stanceUsageBase: 0
+  stanceUsagePerPower: 0
   hitMove: {fileID: 6858759112779511426, guid: 4030d37d891ad30fbba24205847de33a, type: 3}
   guardMove: {fileID: 2602544448145009053, guid: 736770d66de59dbd68ebde8fb0ee7efe, type: 3}
   after:
@@ -175,4 +180,5 @@ MonoBehaviour:
   delayVisualReveal: 0
   visualRevealProgress: 0
   visualRoot: {fileID: 0}
+  showPreviousVisual: 0
   onAttackEffects: []
