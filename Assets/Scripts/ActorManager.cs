@@ -304,28 +304,11 @@ namespace Scripts
 
             bool startedA = false;
             bool startedB = false;
-            bool AcanStartNow = false;
-            bool BcanStartNow = false;
 
-            if (actorA.QueueCount > 0)
-            {
-                AcanStartNow = actorA.PlanMaker.GetForce(actorA);
-            }
-            else
-            {
-                actorA.PlanMaker.GetPlan(actorA);
-            }
+            bool aCanStartNow = PrepareActor(actorA);
+            bool bCanStartNow = PrepareActor(actorB);
 
-            if (actorB.QueueCount > 0)
-            {
-                BcanStartNow = actorB.PlanMaker.GetForce(actorB);
-            }
-            else
-            {
-                actorB.PlanMaker.GetPlan(actorB);
-            }
-
-            if (AcanStartNow && BcanStartNow)
+            if (aCanStartNow && bCanStartNow)
             {
                 if (ShouldBlockStartA())
                 {
@@ -346,7 +329,6 @@ namespace Scripts
                 }
             }
 
-            // 상대가 새 Move를 시작하면 다음 정지 턴을 소비할 수 있게 윈도우를 리셋한다.
             if (startedA)
             {
                 _consumedStopBInCurrentWindow = false;
@@ -449,6 +431,38 @@ namespace Scripts
 
             actor.Interrupt(trigger, reason, this.combatContext);
             return true;
+        }
+
+        private bool PrepareActor(Actor actor)
+        {
+            if (actor == null || actor.PlanMaker == null)
+            {
+                return false;
+            }
+
+            if (actor.QueueCount == 0)
+            {
+                PlanQueryState planState = actor.PlanMaker.GetPlan(actor);
+
+                if (planState == PlanQueryState.Ready)
+                {
+                    if (actor.TryConsumePlannedMove(out Move plannedMove))
+                    {
+                        actor.ActionController.Enqueue(plannedMove);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            PlanQueryState forceState = actor.PlanMaker.GetForce(actor);
+            return forceState == PlanQueryState.Ready;
         }
 
         public int SelectForce(Actor actor, Move move)

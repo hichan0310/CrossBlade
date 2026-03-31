@@ -9,33 +9,8 @@ namespace Scripts
     public class CombatHudUI : MonoBehaviour
     {
         [Header("Battle")]
-        [SerializeField] private ActorManager manager;
         [SerializeField] private Actor playerActor;
         [SerializeField] private Actor enemyActor;
-
-        [Header("Player Moves")]
-        [SerializeField] private Move playerAttack;
-        [SerializeField] private Move player1;
-        [SerializeField] private Move player2;
-        [SerializeField] private Move player3;
-
-        [Header("Enemy Moves")]
-        [SerializeField] private Move enemy1;
-        [SerializeField] private Move enemy2;
-        [SerializeField] private Move enemy3;
-        [SerializeField] private Move enemy4;
-
-        [Header("Player Buttons")]
-        [SerializeField] private Button playerAttackButton;
-        [SerializeField] private Button playerButton1;
-        [SerializeField] private Button playerButton2;
-        [SerializeField] private Button playerButton3;
-
-        [Header("Enemy Buttons")]
-        [SerializeField] private Button enemyButton1;
-        [SerializeField] private Button enemyButton2;
-        [SerializeField] private Button enemyButton3;
-        [SerializeField] private Button enemyButton4;
 
         [Header("Center UI")]
         [SerializeField] private TMP_Text winnerText;
@@ -44,48 +19,8 @@ namespace Scripts
 
         private bool _battleEnded;
 
-        private void Reset()
-        {
-            if (manager == null)
-            {
-                manager = FindAnyObjectByType<ActorManager>();
-            }
-
-            if (manager != null)
-            {
-                if (playerActor == null)
-                {
-                    playerActor = manager.actorA;
-                }
-
-                if (enemyActor == null)
-                {
-                    enemyActor = manager.actorB;
-                }
-            }
-        }
-
         private void Awake()
         {
-            if (manager == null)
-            {
-                manager = FindAnyObjectByType<ActorManager>();
-            }
-
-            if (manager != null)
-            {
-                if (playerActor == null)
-                {
-                    playerActor = manager.actorA;
-                }
-
-                if (enemyActor == null)
-                {
-                    enemyActor = manager.actorB;
-                }
-            }
-
-            BindButton(playerAttackButton, OnPlayerAttack);
             BindButton(restartButton, OnRestart);
         }
 
@@ -114,7 +49,6 @@ namespace Scripts
         private void RefreshHud()
         {
             RefreshTexts();
-            RefreshButtons();
         }
 
         private void RefreshTexts()
@@ -134,25 +68,6 @@ namespace Scripts
                 restartButton.gameObject.SetActive(_battleEnded);
             }
         }
-
-        private void RefreshButtons()
-        {
-            bool playerAlive = playerActor != null && playerActor.Hp > 0;
-            bool canPlayerInput = !_battleEnded && playerAlive;
-
-            SetButtonState(playerAttackButton, canPlayerInput && playerAttack != null);
-        }
-
-        private void SetButtonState(Button button, bool value)
-        {
-            if (button == null)
-            {
-                return;
-            }
-
-            button.interactable = value;
-        }
-
         private void UpdateBattleEnded()
         {
             if (_battleEnded || playerActor == null || enemyActor == null)
@@ -214,22 +129,6 @@ namespace Scripts
             }
 
             return "Ready";
-        }
-
-        public void OnPlayerAttack()
-        {
-            EnqueueMove(playerActor, playerAttack);
-            Debug.Log("asdfasdf");
-        }
-
-        private void EnqueueMove(Actor actor, Move move)
-        {
-            if (_battleEnded || actor == null || move == null)
-            {
-                return;
-            }
-
-            actor.Enqueue(move);
         }
 
         public void OnRestart()

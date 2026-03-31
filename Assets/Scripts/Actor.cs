@@ -116,7 +116,81 @@ namespace Scripts
         [SerializeField] private bool gettingForceFinished=false;
         public bool GettingForceFinished => gettingForceFinished;
         [SerializeField] private float gettingForceTimer = 0f;
+        [SerializeField] private Transform planUIRoot;
+        [SerializeField] private bool gettingPlan = false;
+        public bool GettingPlan => gettingPlan;
 
+        [SerializeField] private bool gettingPlanFinished = false;
+        public bool GettingPlanFinished => gettingPlanFinished;
+
+        [SerializeField] private Move plannedMove;
+        internal Move PlannedMove => plannedMove;
+        internal bool HasPlannedMove => plannedMove != null;
+
+        private GameObject _spawnedPlanInputUI;
+        
+        public void StartGettingPlan()
+        {
+            if (gettingPlan || gettingPlanFinished)
+            {
+                return;
+            }
+
+            gettingPlan = true;
+            SpawnPlanInputUI();
+        }
+
+        public void SubmitPlannedMove(Move move)
+        {
+            plannedMove = move;
+            gettingPlan = false;
+            gettingPlanFinished = true;
+            DespawnPlanInputUI();
+        }
+
+        public void FailPlannedMove()
+        {
+            plannedMove = null;
+            gettingPlan = false;
+            gettingPlanFinished = true;
+            DespawnPlanInputUI();
+        }
+
+        internal bool TryConsumePlannedMove(out Move move)
+        {
+            move = plannedMove;
+            plannedMove = null;
+            gettingPlanFinished = false;
+            return move != null;
+        }
+
+        private void SpawnPlanInputUI()
+        {
+            if (planMaker == null || planMaker.PlanInputUIPrefab == null || _spawnedPlanInputUI != null)
+            {
+                return;
+            }
+
+            Transform parent = planUIRoot != null ? planUIRoot : transform;
+            _spawnedPlanInputUI = Instantiate(planMaker.PlanInputUIPrefab, parent);
+
+            PlanInputUIBinder binder = _spawnedPlanInputUI.GetComponent<PlanInputUIBinder>();
+            if (binder != null)
+            {
+                binder.Bind(this, planMaker);
+            }
+        }
+
+        private void DespawnPlanInputUI()
+        {
+            if (_spawnedPlanInputUI == null)
+            {
+                return;
+            }
+
+            Destroy(_spawnedPlanInputUI);
+            _spawnedPlanInputUI = null;
+        }
         public void StartGettingForce()
         {
             gettingForce = true;
