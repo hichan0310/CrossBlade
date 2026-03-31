@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb162c2132534ff0abf7f1c92b883afb, type: 3}
   m_Name: PlayerInputManager
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.CharAIs.PlayerInputManager
+  planInputUIPrefab: {fileID: 1776060310353939344, guid: e3a4a1b86c44080439b6ceb084fc997a, type: 3}
+  forceInputUIPrefab: {fileID: 0}
   inputDuration: 0.5

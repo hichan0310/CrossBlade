@@ -1,29 +1,66 @@
 using System;
 using UnityEngine;
-
 namespace Scripts.CharAIs
 {
-    
     [CreateAssetMenu(fileName = "PlayerInputManager", menuName = "AI/PlayerInputManager")]
-    public class PlayerInputManager:PlanMaker
+    public class PlayerInputManager : PlanMaker
     {
         [SerializeField] public float inputDuration = 0.5f;
-        
-        public override bool GetPlan(Actor actor)
+
+        public override PlanQueryState GetPlan(Actor actor)
         {
+            if (actor == null || actor.Current.move == null)
+            {
+                return PlanQueryState.Failed;
+            }
+
             var after = actor.Current.move.After;
-            int nextIndex = UnityEngine.Random.Range(0, after.Count);
-            actor.ActionController.Enqueue(after[nextIndex]);
-            return true;
+            if (after == null || after.Count == 0)
+            {
+                actor.FailPlannedMove();
+                return PlanQueryState.Failed;
+            }
+
+            if (actor.HasPlannedMove)
+            {
+                return PlanQueryState.Ready;
+            }
+
+            if (!actor.GettingPlan && !actor.GettingPlanFinished)
+            {
+                actor.StartGettingPlan();
+                return PlanQueryState.Running;
+            }
+
+            if (actor.GettingPlanFinished)
+            {
+                return actor.HasPlannedMove ? PlanQueryState.Ready : PlanQueryState.Failed;
+            }
+
+            return PlanQueryState.Running;
         }
 
-        public override bool GetForce(Actor actor)
+        public override PlanQueryState GetForce(Actor actor)
         {
-            if (actor.ActionController.nextMove.UsesForce && !actor.GettingForce && !actor.GettingForceFinished)
+            if (actor == null)
+            {
+                return PlanQueryState.Failed;
+            }
+
+            if (actor.ActionController.nextMove == null || !actor.ActionController.nextMove.UsesForce)
+            {
+                return PlanQueryState.Ready;
+            }
+
+            if (!actor.GettingForce && !actor.GettingForceFinished)
             {
                 actor.StartGettingForce();
+                return PlanQueryState.Running;
             }
-            return (!actor.GettingForce && actor.GettingForceFinished) || !actor.ActionController.nextMove.UsesForce;
+
+            return (!actor.GettingForce && actor.GettingForceFinished)
+                ? PlanQueryState.Ready
+                : PlanQueryState.Running;
         }
     }
 }
