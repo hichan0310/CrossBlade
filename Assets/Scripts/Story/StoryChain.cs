@@ -97,19 +97,23 @@ namespace Scripts.Story
 
         public override void Execute(StoryObject sto)
         {
-            if (step >= chains.Count) return;
-
-            if (step == 0 || chains[step - 1].Finished())
+            while (step < chains.Count)
             {
-                chains[step].Execute(sto);
+                StoryViewChain current = chains[step];
+                current.Execute(sto);
+
+                if (!current.Finished())
+                {
+                    return;
+                }
+
                 step++;
             }
         }
 
         public override bool Finished()
         {
-            if (chains.Count == 0) return true;
-            return step >= chains.Count && chains[chains.Count - 1].Finished();
+            return step >= chains.Count;
         }
     }
 
