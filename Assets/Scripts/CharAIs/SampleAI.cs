@@ -7,12 +7,18 @@ namespace Scripts.CharAIs
     {
         public override PlanQueryState GetPlan(Actor actor)
         {
-            if (actor == null || actor.Current.move == null)
+            if (actor == null)
             {
                 return PlanQueryState.Failed;
             }
 
-            var after = actor.Current.move.After;
+            Move baseMove = actor.PlanningBaseMove;
+            if (baseMove == null)
+            {
+                return PlanQueryState.Failed;
+            }
+
+            var after = baseMove.After;
             if (after == null || after.Count == 0)
             {
                 actor.FailPlannedMove();

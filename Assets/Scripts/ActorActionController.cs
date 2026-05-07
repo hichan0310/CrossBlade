@@ -9,6 +9,7 @@ namespace Scripts
         private Actor _owner;
 
         private readonly Queue<QueuedMove> _queue = new Queue<QueuedMove>();
+        [SerializeField, Min(1)] private int maxQueueCount = 5;
         private MoveRuntime _current;
         private QueuedMove _currentQueuedMove;
         private bool _hasCurrent;
@@ -81,6 +82,41 @@ namespace Scripts
                 return Mathf.Clamp01((startupElapsed + activeElapsed) / totalDuration);
             }
         }
+
+        internal int MaxQueueCount => maxQueueCount;
+        internal bool CanEnqueueMore => _queue.Count < maxQueueCount;
+
+        internal List<Move> GetQueuedMoveSnapshot()
+        {
+            List<Move> result = new List<Move>();
+
+            foreach (QueuedMove queuedMove in _queue)
+            {
+                if (queuedMove != null && queuedMove.move != null)
+                {
+                    result.Add(queuedMove.move);
+                }
+            }
+
+            return result;
+        }
+
+        internal Move GetLastQueuedMove()
+        {
+            Move last = null;
+
+            foreach (QueuedMove queuedMove in _queue)
+            {
+                if (queuedMove != null && queuedMove.move != null)
+                {
+                    last = queuedMove.move;
+                }
+            }
+
+            return last;
+        }
+
+internal Move CurrentSourceMove => _currentSourceMove;
         
 
         internal void Initialize(Actor owner)
@@ -119,11 +155,16 @@ namespace Scripts
             _moveStartFacingSign = _owner.FacingSign;
         }
 
-        internal void Enqueue(Move move)
+        internal bool TryEnqueue(Move move)
         {
             if (move == null)
             {
-                return;
+                return false;
+            }
+
+            if (!CanEnqueueMore)
+            {
+                return false;
             }
 
             if (!_hasCurrent && _queue.Count == 0)
@@ -132,7 +173,13 @@ namespace Scripts
             }
 
             _queue.Enqueue(new QueuedMove { move = move });
+            return true;
         }
+
+        internal void Enqueue(Move move)
+        {
+            TryEnqueue(move);
+}
 
         internal void ClearQueuedMovesForInterrupt()
         {

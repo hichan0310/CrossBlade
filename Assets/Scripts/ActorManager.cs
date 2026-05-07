@@ -72,10 +72,14 @@ namespace Scripts
         public void Simulate(float deltaTime)
         {
             this.actorA.ForceUpdate(deltaTime);
-            this.actorB.ForceUpdate(deltaTime);
-            TryStartActors();
-            UpdateFacing();
-            ApplyMovement(deltaTime);
+        this.actorB.ForceUpdate(deltaTime);
+
+        UpdatePlanning(actorA);
+        UpdatePlanning(actorB);
+
+        TryStartActors();
+        UpdateFacing();
+        ApplyMovement(deltaTime);
 
             if (actorA.IsMoveRunning && actorB.IsMoveRunning
                                      && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
@@ -442,27 +446,41 @@ namespace Scripts
 
             if (actor.QueueCount == 0)
             {
-                PlanQueryState planState = actor.PlanMaker.GetPlan(actor);
+                UpdatePlanning(actor);
+            }
 
-                if (planState == PlanQueryState.Ready)
-                {
-                    if (actor.TryConsumePlannedMove(out Move plannedMove))
-                    {
-                        actor.ActionController.Enqueue(plannedMove);
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
+            if (actor.QueueCount == 0)
+            {
+                return false;
             }
 
             PlanQueryState forceState = actor.PlanMaker.GetForce(actor);
             return forceState == PlanQueryState.Ready;
+        }
+
+        private void UpdatePlanning(Actor actor)
+        {
+            if (actor == null || actor.PlanMaker == null)
+            {
+                return;
+            }
+
+            if (!actor.CanEnqueueMove)
+            {
+                return;
+            }
+
+            PlanQueryState planState = actor.PlanMaker.GetPlan(actor);
+
+            if (planState != PlanQueryState.Ready)
+            {
+                return;
+            }
+
+            if (actor.TryConsumePlannedMove(out Move plannedMove))
+            {
+                actor.TryEnqueueMove(plannedMove);
+            }
         }
 
         public int SelectForce(Actor actor, Move move)

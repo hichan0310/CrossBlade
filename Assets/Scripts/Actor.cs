@@ -198,6 +198,51 @@ namespace Scripts
         }
 
         internal int PendingForce => pendingForce;
+
+        internal bool TryEnqueueMove(Move move)
+        {
+            return actionController != null && actionController.TryEnqueue(move);
+        }
+
+        internal List<Move> GetQueuedMoveSnapshot()
+        {
+            return actionController != null
+                ? actionController.GetQueuedMoveSnapshot()
+                : new List<Move>();
+        }
+
+        internal bool CanEnqueueMove
+        {
+            get
+            {
+                return actionController != null && actionController.CanEnqueueMore;
+            }
+        }
+
+        internal Move PlanningBaseMove
+        {
+            get
+            {
+                if (actionController == null)
+                {
+                    return Current.move;
+                }
+
+                Move lastQueued = actionController.GetLastQueuedMove();
+                if (lastQueued != null)
+                {
+                    return lastQueued;
+                }
+
+                Move currentSource = actionController.CurrentSourceMove;
+                if (currentSource != null)
+                {
+                    return currentSource;
+                }
+
+                return Current.move;
+            }
+        }
         internal bool CanIncreasePendingForce()
         {
             return !IsMoveRunning && pendingForce < 5;

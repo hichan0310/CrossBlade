@@ -19,7 +19,19 @@ namespace Scripts
 
         private void Rebuild()
         {
-            if (_actor == null || _actor.Current.move == null || buttonPrefab == null || buttonRoot == null)
+            if (_actor == null || buttonPrefab == null || buttonRoot == null)
+            {
+                return;
+            }
+
+            Move baseMove = _actor.PlanningBaseMove;
+            if (baseMove == null)
+            {
+                return;
+            }
+
+            var after = baseMove.After;
+            if (after == null || after.Count == 0)
             {
                 return;
             }
@@ -29,7 +41,6 @@ namespace Scripts
                 Destroy(buttonRoot.GetChild(i).gameObject);
             }
 
-            var after = _actor.Current.move.After;
             for (int i = 0; i < after.Count; i++)
             {
                 Move move = after[i];

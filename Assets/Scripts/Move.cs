@@ -48,6 +48,10 @@ namespace Scripts
 
     public class Move : MonoBehaviour
     {
+        [Header("UI")]
+        [SerializeField] private string displayName;
+        internal string DisplayName => string.IsNullOrEmpty(displayName) ? moveId : displayName;
+
         [Header("Identity")]
         [SerializeField] private string moveId = "move";
         [SerializeField] private MoveCategory category = MoveCategory.Neutral;
