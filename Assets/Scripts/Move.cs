@@ -35,7 +35,8 @@ namespace Scripts
         StopAtRange,
         PassThroughTarget,
         FixedDistanceForward,
-        FixedSpeedForward
+        FixedSpeedForward,
+        CurveXY
     }
 
     public enum MovementPhase
@@ -58,6 +59,11 @@ namespace Scripts
 
         [Header("Timing")] 
         [SerializeField, Min(0.01f)] private float duration = 0.30f;
+
+        [Header("Persistent Character Animation")]
+        [Tooltip("Optional clip on the Actor's persistent rig. Sampled using total MoveProgress, including startup.")]
+        [SerializeField] private AnimationClip characterAnimation;
+        internal AnimationClip CharacterAnimation => characterAnimation;
 
         [Header("Combat")] 
         [SerializeField, Min(0f)] private float damageBase;
@@ -88,6 +94,16 @@ namespace Scripts
         [SerializeField, Min(0f)] private float stopDistance = 0f;
         [SerializeField, Min(0f)] private float passThroughOffset = 0f;
         [SerializeField,] private float fixedTravelDistance = 0f;
+        [SerializeField] private AnimationCurve movementX = AnimationCurve.Linear(0, 0, 1, 0);
+        [SerializeField] private AnimationCurve movementY = AnimationCurve.Linear(0, 0, 1, 0);
+
+        public Vector2 EvaluateMovementOffset(float progress, int facingSign)
+        {
+            progress = Mathf.Clamp01(progress);
+            return new Vector2(
+                (movementX == null ? 0 : movementX.Evaluate(progress) - movementX.Evaluate(0)) * (facingSign < 0 ? -1 : 1),
+                movementY == null ? 0 : movementY.Evaluate(progress) - movementY.Evaluate(0));
+        }
 
         [Header("Visual Reveal")]
         [SerializeField] private bool delayVisualReveal = false;
@@ -114,15 +130,18 @@ namespace Scripts
         internal string MoveId => moveId;
         internal IList<Hitbox> WeaponHitboxes => weaponHitboxes;
         internal Collider2D BodyCollider => bodyCollider;
-        internal Move HitMove => hitMove;
-        internal Move GuardMove => guardMove;
+        [SerializeField, HideInInspector] private MoveReactionDefaults reactionDefaults;
+        public Move ResolvedHitMove => hitMove;
+        public Move ResolvedGuardMove => guardMove;
+        internal Move HitMove => ResolvedHitMove;
+        internal Move GuardMove => ResolvedGuardMove;
         internal IList<Move> After => after;
         internal bool Guardable => guardable;
         internal bool SkipAdditionalInterruptFollowUp => skipAdditionalInterruptFollowUp;
         internal virtual float Duration => duration;
         internal virtual int StanceRecovery => stanceRecovery;
         
-        [SerializeField] private List<MoveEffects> onAttackEffects;
+        [SerializeField] private List<MoveEffects> onAttackEffects = new List<MoveEffects>();
 
         internal void BindGraphFromSource(Move source)
         {
@@ -133,6 +152,7 @@ namespace Scripts
 
             hitMove = source.hitMove;
             guardMove = source.guardMove;
+            reactionDefaults = source.reactionDefaults;
             after = new List<Move>(source.after);
             guardable = source.guardable;
             skipAdditionalInterruptFollowUp = source.skipAdditionalInterruptFollowUp;
@@ -170,15 +190,17 @@ namespace Scripts
         internal virtual Move OnHit(Actor actor, CombatContext combatContext)
         {
             actor.ClearQueuedMovesForInterrupt();
-            actor.EnqueueInterruptFollowUps(hitMove, 1);
-            return hitMove;
+            var target = actor.CombatMoveGraph != null ? actor.CombatMoveGraph.ResolveReaction(this, false) : hitMove;
+            actor.EnqueueInterruptFollowUps(target, 1);
+            return target;
         }
 
         internal virtual Move OnGuard(Actor actor, CombatContext combatContext)
         {
             actor.ClearQueuedMovesForInterrupt();
-            actor.EnqueueInterruptFollowUps(guardMove, 2);
-            return guardMove;
+            var target = actor.CombatMoveGraph != null ? actor.CombatMoveGraph.ResolveReaction(this, true) : guardMove;
+            actor.EnqueueInterruptFollowUps(target, 2);
+            return target;
         }
 
         internal virtual void OnClash(Actor actor, CombatContext combatContext)
@@ -188,7 +210,7 @@ namespace Scripts
 
         internal virtual void OnAttack(Actor actor, CombatContext combatContext)
         {
-            onAttackEffects.ForEach(effect => effect.gameObject.SetActive(true));
+            onAttackEffects?.ForEach(effect => { if (effect != null) effect.gameObject.SetActive(true); });
         }
 
         private void Reset()

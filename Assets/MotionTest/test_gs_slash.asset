@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c09da85590d34189a36ee040efb168d5, type: 3}
+  m_Name: test_gs_slash
+  m_EditorClassIdentifier: Assembly-CSharp-Editor:MotionPrototype:MotionSequenceAsset
+  previewCharacter: {fileID: 3399982971775233707, guid: b020b92be637e73fdabd2e15d67e2209, type: 3}
+  outputFps: 30
+  keepRootMotion: 0
+  segments:
+  - label: a025_034000
+    clip: {fileID: 7400000, guid: 25942a64f5a2c4c8eb7a77597ff00af5, type: 2}
+    firstFrame: 12
+    lastFrame: 24
+    speed: 1
+    blendFrames: 0

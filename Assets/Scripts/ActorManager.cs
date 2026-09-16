@@ -231,6 +231,10 @@ namespace Scripts
 
             switch (move.MovementMode)
             {
+                case MovementMode.CurveXY:
+                    // ActorActionController samples curves with the visual clock,
+                    // including the final sample before a Move finishes.
+                    return;
                 case MovementMode.None:
                     return;
 
@@ -487,8 +491,8 @@ namespace Scripts
                 };
             }
 
-            bool aWeaponBBody = TryGetWeaponBodyTouch(a.weaponHitboxes, b.bodyCollider, out Hitbox aBodyHitbox);
-            bool bWeaponABody = TryGetWeaponBodyTouch(b.weaponHitboxes, a.bodyCollider, out Hitbox bBodyHitbox);
+            bool aWeaponBBody = TryGetWeaponBodyTouch(a.weaponHitboxes, b.bodyCollider, a.MoveProgress, out Hitbox aBodyHitbox);
+            bool bWeaponABody = TryGetWeaponBodyTouch(b.weaponHitboxes, a.bodyCollider, b.MoveProgress, out Hitbox bBodyHitbox);
 
             if (aWeaponBBody && bWeaponABody)
             {
@@ -630,7 +634,7 @@ namespace Scripts
             return lhs.bounds.Intersects(rhs.bounds);
         }
 
-        private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body,
+        private static bool TryGetWeaponBodyTouch(System.Collections.Generic.IList<Hitbox> hitboxes, Collider2D body, float progress,
             out Hitbox touchingHitbox)
         {
             touchingHitbox = null;
@@ -642,7 +646,7 @@ namespace Scripts
             for (int i = 0; i < hitboxes.Count; i++)
             {
                 Hitbox hitbox = hitboxes[i];
-                if (hitbox == null || !Touching(hitbox.Collider, body))
+                if (hitbox == null || !hitbox.IsActiveAt(progress) || !Touching(hitbox.Collider, body))
                 {
                     continue;
                 }
@@ -662,7 +666,7 @@ namespace Scripts
             for (int i = 0; i < a.weaponHitboxes.Count; i++)
             {
                 Hitbox left = a.weaponHitboxes[i];
-                if (left == null || left.Collider == null || !left.Collider.enabled)
+                if (left == null || !left.IsActiveAt(a.MoveProgress) || left.Collider == null || !left.Collider.enabled)
                 {
                     continue;
                 }
@@ -670,7 +674,7 @@ namespace Scripts
                 for (int j = 0; j < b.weaponHitboxes.Count; j++)
                 {
                     Hitbox right = b.weaponHitboxes[j];
-                    if (right == null || !Touching(left.Collider, right.Collider))
+                    if (right == null || !right.IsActiveAt(b.MoveProgress) || !Touching(left.Collider, right.Collider))
                     {
                         continue;
                     }

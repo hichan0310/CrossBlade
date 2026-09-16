@@ -10,6 +10,31 @@ namespace Scripts
         [Header("References")]
         [SerializeField] private Transform moveMount;
 
+        [Header("Persistent 3D Character (optional)")]
+        [SerializeField] private CharacterAnimationPlayer characterPlayer;
+        [Tooltip("Hide only the Move root's legacy character sprite; child sprites and effects remain available.")]
+        [SerializeField] private bool replaceMoveRootSprite = true;
+        private Actor _actor;
+
+        private void Awake()
+        {
+            _actor = GetComponent<Actor>();
+            characterPlayer?.Evaluate(null, 0f, _actor != null ? _actor.FacingSign : 1);
+        }
+
+        private void LateUpdate()
+        {
+            if (characterPlayer != null && _actor != null)
+                characterPlayer.UpdateFacing(_actor.FacingSign);
+        }
+
+        private void HideReplacedSprite()
+        {
+            if (characterPlayer == null || !replaceMoveRootSprite || _currentMoveInstance == null) return;
+            SpriteRenderer sprite = _currentMoveInstance.GetComponent<SpriteRenderer>();
+            if (sprite != null) sprite.enabled = false;
+        }
+
         [Header("Visual Reveal")]
         [SerializeField] private Transform previousVisualFallbackRoot;
 
@@ -40,6 +65,7 @@ namespace Scripts
 
             _currentMoveInstance = instance;
             currentMoveDebug = instance;
+            HideReplacedSprite();
 
             return instance;
         }
@@ -61,6 +87,7 @@ namespace Scripts
             {
                 _currentMoveInstance = null;
                 currentMoveDebug = null;
+                characterPlayer?.Evaluate(null, 0f, _actor != null ? _actor.FacingSign : 1);
             }
 
             Destroy(instance.gameObject);
@@ -82,6 +109,11 @@ namespace Scripts
             }
 
             SpriteRenderer[] sourceRenderers = sourceRoot.GetComponentsInChildren<SpriteRenderer>(true);
+            if (characterPlayer != null && replaceMoveRootSprite)
+            {
+                SpriteRenderer replaced = _currentMoveInstance.GetComponent<SpriteRenderer>();
+                sourceRenderers = Array.FindAll(sourceRenderers, renderer => renderer != replaced);
+            }
             if (sourceRenderers == null || sourceRenderers.Length == 0)
             {
                 ClearPreviousVisualSnapshot();
@@ -194,6 +226,9 @@ namespace Scripts
 
         internal void RefreshMoveVisualState(bool hasCurrent, float moveProgress)
         {
+            characterPlayer?.Evaluate(hasCurrent ? _currentMoveInstance : null, moveProgress,
+                _actor != null ? _actor.FacingSign : 1);
+            HideReplacedSprite();
             if (_currentMoveInstance == null)
             {
                 ClearPreviousVisualSnapshot();
@@ -213,6 +248,9 @@ namespace Scripts
                 return;
             }
 
+            if (_currentMoveInstance is TurnMotionMove turnMotionMove)
+                turnMotionMove.EvaluateVisual(moveProgress);
+
             bool revealBlocked = _currentMoveInstance.DelayVisualReveal
                 && moveProgress < _currentMoveInstance.VisualRevealProgress;
 
@@ -228,6 +266,7 @@ namespace Scripts
             bool currentVisible = !revealBlocked;
 
             SetVisualVisible(root, currentVisible);
+            HideReplacedSprite();
             SetPreviousVisualVisible(showFallback);
 
         }

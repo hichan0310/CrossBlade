@@ -202,12 +202,14 @@ namespace Scripts
             {
                 _moveStartupRemaining = Mathf.Max(0f, _moveStartupRemaining - deltaTime);
                 _owner.ApplyRecoilFromActionController(deltaTime);
+                ApplyCurveMovement(true);
                 _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
                 return;
             }
 
             _current.elapsed += deltaTime;
             _owner.ApplyRecoilFromActionController(deltaTime);
+            ApplyCurveMovement(false);
 
             if (_current.IsDone)
             {
@@ -215,6 +217,29 @@ namespace Scripts
             }
 
             _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
+        }
+
+        private void ApplyCurveMovement(bool startup)
+        {
+            var move = _current.move;
+            if (move == null || move.MovementMode != MovementMode.CurveXY) return;
+            float progress;
+            switch (move.MovementPhase)
+            {
+                case MovementPhase.StartupOnly:
+                    if (!startup) return;
+                    progress = StartupProgress;
+                    break;
+                case MovementPhase.ActiveOnly:
+                    if (startup) return;
+                    progress = ActiveProgress;
+                    break;
+                case MovementPhase.StartupAndActive:
+                    progress = MoveProgress;
+                    break;
+                default: return;
+            }
+            _owner.MoveTo(_moveStartPosition + move.EvaluateMovementOffset(progress, _moveStartFacingSign));
         }
 
         internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)

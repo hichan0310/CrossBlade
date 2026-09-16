@@ -76,6 +76,9 @@ namespace Scripts
 
     public class Actor : MonoBehaviour
     {
+        [SerializeField, Tooltip("이 캐릭터가 사용하는 전투 그래프. 공통 방어·피격은 이 그래프에서 가져옵니다.")]
+        private CombatMoveGraphAsset combatMoveGraph;
+        public CombatMoveGraphAsset CombatMoveGraph => combatMoveGraph;
         [SerializeField] private ActorType actorType;
 
         [Header("Identity")]

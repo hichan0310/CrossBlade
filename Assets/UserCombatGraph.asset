@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba39166d7fb94046928e748cb58c3d07, type: 3}
+  m_Name: UserCombatGraph
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::CombatMoveGraphAsset
+  startMove: {fileID: 6042519373193724481, guid: 0b63cdde40671e111a678b431da6e488, type: 3}
+  reactionDefaults: {fileID: 11400000, guid: 95d40d4fb83cbe93a94db74a6ed2f052, type: 2}
+  defaultGuardMove: {fileID: 4026727490531680463, guid: 1c3c0f7f35e806c9680c7c7e8729d6d4, type: 3}
+  defaultHitMove: {fileID: 6042519373193724481, guid: 0b63cdde40671e111a678b431da6e488, type: 3}
+  reactionsMigrated: 1
+  nodes:
+  - move: {fileID: 8853061623293623605, guid: 3cdfd7af40920ba37b9e35ec63a568c6, type: 3}
+    position: {x: -71.5, y: 0}
+  - move: {fileID: 7875523302975738113, guid: d7ec34eea842a8ad28f986b83dbd1f7b, type: 3}
+    position: {x: 245, y: 0}
+  - move: {fileID: 3575935972757309283, guid: 28da13b482e65fb9a9a0739ef25f0462, type: 3}
+    position: {x: 590, y: -109}
+  - move: {fileID: 3497195785916797692, guid: 88ddac329b3759df881f2b1a9ff8df94, type: 3}
+    position: {x: 917.5, y: -109}
+  - move: {fileID: 3244317613807865154, guid: 4b80925ddb45b6182b548e896442a81a, type: 3}
+    position: {x: 590, y: 125}
+  - move: {fileID: 1968915847142497113, guid: 9431477a1a9c8ee04aebc70dd10fc3f8, type: 3}
+    position: {x: 917.5, y: 39}
+  - move: {fileID: 3059943091603988072, guid: 8128d7e1851eae92db2cc7c789da6924, type: 3}
+    position: {x: 1238, y: 125}
+  - move: {fileID: 5746515432381979223, guid: 72abc1d19f119e5628c1a075b3df562b, type: 3}
+    position: {x: 245, y: 287.5}
+  - move: {fileID: 6789012850135457294, guid: d346f743a4782cdbeab219fefb35fae3, type: 3}
+    position: {x: 590, y: 327}
+  - move: {fileID: 4566386160152471265, guid: 132b0e76d5dec69648a566bf6b5e6687, type: 3}
+    position: {x: 917.5, y: 327}
+  - move: {fileID: 4026727490531680463, guid: 1c3c0f7f35e806c9680c7c7e8729d6d4, type: 3}
+    position: {x: -499.5, y: 549}
+  - move: {fileID: 1916478172363914765, guid: c86d7ff3cf9b3b34ea373187fd53d6f2, type: 3}
+    position: {x: -71.5, y: 611.5}
+  - move: {fileID: 1407964774705640027, guid: 03933538e776e0e178eaa742b3b6deba, type: 3}
+    position: {x: 245, y: 611.5}
+  - move: {fileID: 4667541508725747510, guid: fc49bd338a011d55e92e79a6954c7c3c, type: 3}
+    position: {x: 590, y: 611.5}
+  - move: {fileID: 6710088083943591764, guid: f75403712a0cd64f9acf74e96fbd3da7, type: 3}
+    position: {x: 917.5, y: 611.5}
+  - move: {fileID: 3095244410870162631, guid: 13f6fe568b626e7ebb4aa84d4d73f968, type: 3}
+    position: {x: -71.5, y: 287.5}
+  - move: {fileID: 6042519373193724481, guid: 0b63cdde40671e111a678b431da6e488, type: 3}
+    position: {x: -499.5, y: 0}
+  pan: {x: 1392.4626, y: 749.43176}
+  zoom: 0.43232757
+  previewCharacter: {fileID: 3399982971775233707, guid: b020b92be637e73fdabd2e15d67e2209, type: 3}
+  motionRootPath: Model/skeleton/Pelvis
+  previewYaw: 90
+  previewSpeed: 0.1
+  previewZoom: 4.22
+  previewHeight: 1
+  startupSeconds: 0.1

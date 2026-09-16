@@ -156,6 +156,7 @@ MonoBehaviour:
   weaponHitboxes: []
   bodyCollider: {fileID: 104072810625995824}
   duration: 0.3
+  characterAnimation: {fileID: 7400000, guid: c3e67e4c282df94f4af27db1d15ec236, type: 2}
   damageBase: 0
   damagePerPower: 0
   stanceDamageBase: 0

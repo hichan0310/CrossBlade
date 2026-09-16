@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3ac70e9a1d24d64ace32a57d78d98f2, type: 3}
+  m_Name: UserCombatGraph_Reactions
+  m_EditorClassIdentifier: Assembly-CSharp::Scripts.MoveReactionDefaults
+  guardMove: {fileID: 0}
+  hitMove: {fileID: 0}

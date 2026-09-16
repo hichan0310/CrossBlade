@@ -1,0 +1,382 @@
+{
+  "blend": "output/danjin_eldenring_retarget_weaponfix_xy.blend",
+  "action": "Danjin_ER_SwordSlash_Test01",
+  "weapon_basis": [
+    [
+      7.549790126404332e-08,
+      4.3711398944878965e-08,
+      1.0,
+      0.0
+    ],
+    [
+      1.0,
+      1.1920928955078125e-07,
+      -7.549790126404332e-08,
+      -0.09999997913837433
+    ],
+    [
+      -1.1920928955078125e-07,
+      1.0,
+      -4.371138828673793e-08,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "materials": [
+    {
+      "name": "MI_Bangs",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Bangs_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MI_Down",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Down_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "body1",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Down_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "qian yueliang",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Down_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "qian jinshukou",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Down_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ce suisuix2",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Down_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "bai",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Eye_D2.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "eye",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Eye_D2.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "hi",
+      "texture": "Assets/Characters/Danjin/Textures/hi.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "teeth",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "she",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "kou",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "nose",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "mei",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "jie",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "yinying",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "yinying2",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "yanbai",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "hou",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "face",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Face_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MI_Hair",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Hair_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MI_Up",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "body2",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "earing",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "shou",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "gebo",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "body4",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "body3",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "qian",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "fashi",
+      "texture": "Assets/Characters/Danjin/Textures/T_R2T1MicaiMd10011Upper_D.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "eye+",
+      "texture": "Assets/Characters/Danjin/Textures/yan.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "star",
+      "texture": "Assets/Characters/Danjin/Textures/starby1010浣.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "heart",
+      "texture": "Assets/Characters/Danjin/Textures/heartby1010浣.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Cheek",
+      "texture": "",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MI_XInghen",
+      "texture": "Assets/Characters/Danjin/Textures/3xing-1.png",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ]
+}
