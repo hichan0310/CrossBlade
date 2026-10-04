@@ -55,9 +55,16 @@ MonoBehaviour:
   damagePerPower: 0
   stanceDamageBase: 0
   stanceDamagePerPower: 0
+  impactPowerBase: 0
+  impactPowerPerForce: 0
   stanceRecovery: 0
-  stanceUsageBase: 0
+  stanceUsageBase: 13
   stanceUsagePerPower: 0
+  canCharge: 1
+  acceptsCarriedForce: 1
+  chargeStanceCost: 0
+  chaseForceAllocation: 0
+  chaseSpeedPerForce: 1.5
   hitMove: {fileID: 0}
   guardMove: {fileID: 0}
   after:

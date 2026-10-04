@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Scripts.CharAIs
@@ -7,20 +8,26 @@ namespace Scripts.CharAIs
     {
         public override PlanQueryState GetPlan(Actor actor)
         {
-            if (actor == null || actor.Current.move == null)
+            if (actor == null || actor.PlanningMove == null)
             {
                 return PlanQueryState.Failed;
             }
 
-            var after = actor.Current.move.After;
-            if (after == null || after.Count == 0)
+            if (actor.HasPlannedMove) return PlanQueryState.Ready;
+
+            var after = actor.PlanningMove.After;
+            var candidates = new List<Move>();
+            if (after != null)
+                foreach (var move in after)
+                    if (move != null) candidates.Add(move);
+
+            if (candidates.Count == 0)
             {
-                actor.FailPlannedMove();
-                return PlanQueryState.Failed;
+                if (actor.IdleMove != null) { actor.SubmitPlannedMove(actor.IdleMove); return PlanQueryState.Ready; }
+                actor.FailPlannedMove(); return PlanQueryState.Failed;
             }
 
-            int nextIndex = UnityEngine.Random.Range(0, after.Count);
-            actor.SubmitPlannedMove(after[nextIndex]);
+            actor.SubmitPlannedMove(candidates[Random.Range(0, candidates.Count)]);
             return PlanQueryState.Ready;
         }
 
@@ -36,7 +43,6 @@ namespace Scripts.CharAIs
                 return PlanQueryState.Ready;
             }
 
-            actor.pendingForce = UnityEngine.Random.Range(1, 6);
             return PlanQueryState.Ready;
         }
     }

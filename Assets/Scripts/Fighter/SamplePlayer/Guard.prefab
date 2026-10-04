@@ -160,6 +160,9 @@ MonoBehaviour:
   damagePerPower: 0
   stanceDamageBase: 0
   stanceDamagePerPower: 0
+  stanceUsagePerPower: 0
+  stanceUsageBase: 13
+  stanceRecovery: 0
   hitMove: {fileID: 6858759112779511426, guid: 4030d37d891ad30fbba24205847de33a, type: 3}
   guardMove: {fileID: 2602544448145009053}
   after:

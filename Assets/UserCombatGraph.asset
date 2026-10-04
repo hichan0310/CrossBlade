@@ -11,8 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ba39166d7fb94046928e748cb58c3d07, type: 3}
   m_Name: UserCombatGraph
-  m_EditorClassIdentifier: Assembly-CSharp-Editor::CombatMoveGraphAsset
-  startMove: {fileID: 6042519373193724481, guid: 0b63cdde40671e111a678b431da6e488, type: 3}
+  m_EditorClassIdentifier: Assembly-CSharp::CombatMoveGraphAsset
+  startMove: {fileID: 3095244410870162631, guid: 13f6fe568b626e7ebb4aa84d4d73f968, type: 3}
+  networkContentHash: f2852dceaa5ed028cc1489a41d9701dd7518b7fa4b26bd00618956f4669830d9
   reactionDefaults: {fileID: 11400000, guid: 95d40d4fb83cbe93a94db74a6ed2f052, type: 2}
   defaultGuardMove: {fileID: 4026727490531680463, guid: 1c3c0f7f35e806c9680c7c7e8729d6d4, type: 3}
   defaultHitMove: {fileID: 6042519373193724481, guid: 0b63cdde40671e111a678b431da6e488, type: 3}
@@ -56,7 +57,7 @@ MonoBehaviour:
   zoom: 0.43232757
   previewCharacter: {fileID: 3399982971775233707, guid: b020b92be637e73fdabd2e15d67e2209, type: 3}
   motionRootPath: Model/skeleton/Pelvis
-  previewYaw: 90
+  previewYaw: -90
   previewSpeed: 0.1
   previewZoom: 4.22
   previewHeight: 1

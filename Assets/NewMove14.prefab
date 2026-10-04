@@ -221,19 +221,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: NewMove14
-  category: 0
+  category: 1
   weaponHitboxes:
   - {fileID: 9138437478009589457}
   bodyCollider: {fileID: 7631757420104361552}
   duration: 0.3
   characterAnimation: {fileID: 7400000, guid: 5d8acbecae253b6be993cec3b2cf6836, type: 2}
-  damageBase: 0
-  damagePerPower: 0
-  stanceDamageBase: 0
-  stanceDamagePerPower: 0
+  damageBase: 12
+  damagePerPower: 3
+  stanceDamageBase: 22
+  stanceDamagePerPower: 6
+  impactPowerBase: 12
+  impactPowerPerForce: 4
   stanceRecovery: 0
-  stanceUsageBase: 0
-  stanceUsagePerPower: 0
+  stanceUsageBase: 22
+  stanceUsagePerPower: 5
+  canCharge: 0
+  acceptsCarriedForce: 1
+  chargeStanceCost: 4
+  chaseForceAllocation: 0
+  chaseSpeedPerForce: 1.5
   hitMove: {fileID: 0}
   guardMove: {fileID: 0}
   after:

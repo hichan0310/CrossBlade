@@ -157,8 +157,34 @@ public sealed class MoveHitboxWindow : EditorWindow
                 EditorGUILayout.PropertyField(so.FindProperty("characterAnimation"), new GUIContent("애니메이션 (.anim)"));
                 EditorGUILayout.PropertyField(so.FindProperty("duration"), new GUIContent("실행 시간 (초)"));
                 EditorGUILayout.PropertyField(so.FindProperty("category"));
+                var idleFlag = so.FindProperty("isIdle");
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(idleFlag, new GUIContent("Idle 동작 (시작/온라인 시간 초과)"));
+                if (EditorGUI.EndChangeCheck() && idleFlag.boolValue)
+                {
+                    so.FindProperty("stanceUsageBase").floatValue = 0f;
+                    so.FindProperty("stanceUsagePerPower").floatValue = 0f;
+                    so.FindProperty("stanceRecovery").intValue = 5;
+                }
+                if (idleFlag.boolValue)
+                    EditorGUILayout.HelpBox("한 그래프에서 Idle 동작은 하나만 체크하세요. 정상 종료 시 기본 10 + 추가 5를 회복합니다.", MessageType.Info);
                 EditorGUILayout.PropertyField(so.FindProperty("damageBase"), new GUIContent("기본 데미지"));
+                EditorGUILayout.PropertyField(so.FindProperty("damagePerPower"), new GUIContent("힘 1당 추가 데미지"));
                 EditorGUILayout.PropertyField(so.FindProperty("stanceDamageBase"), new GUIContent("기본 자세 데미지"));
+                EditorGUILayout.PropertyField(so.FindProperty("stanceDamagePerPower"), new GUIContent("힘 1당 추가 자세 데미지"));
+                EditorGUILayout.PropertyField(so.FindProperty("stanceUsageBase"), new GUIContent("기본 자세 소모"));
+                EditorGUILayout.PropertyField(so.FindProperty("stanceUsagePerPower"), new GUIContent("힘 1당 추가 자세 소모"));
+                EditorGUILayout.PropertyField(so.FindProperty("stanceRecovery"), new GUIContent("행동 종료 추가 자세 회복"));
+                EditorGUILayout.PropertyField(so.FindProperty("canCharge"), new GUIContent("스페이스로 충전 가능"));
+                if (so.FindProperty("canCharge").boolValue)
+                    EditorGUILayout.PropertyField(so.FindProperty("chargeStanceCost"), new GUIContent("충전 시 별도 자세 소모 (선택)"));
+                EditorGUILayout.PropertyField(so.FindProperty("acceptsCarriedForce"), new GUIContent("이전 행동 힘 받기"));
+                if (so.FindProperty("category").enumValueIndex == (int)MoveCategory.Attack)
+                {
+                    EditorGUILayout.PropertyField(so.FindProperty("chaseForceAllocation"), new GUIContent("힘 중 추격에 배분"));
+                    EditorGUILayout.PropertyField(so.FindProperty("chaseSpeedPerForce"), new GUIContent("추격 힘 1당 속도 보너스"));
+                    EditorGUILayout.HelpBox("추격 보너스는 거리까지 추격(StopAtRange) 이동을 쓰는 공격에서 적용됩니다.", MessageType.Info);
+                }
                 so.ApplyModifiedProperties();
             }
             previewSpeed = EditorGUILayout.Slider("미리보기 속도", previewSpeed, .05f, 2f);
@@ -421,10 +447,45 @@ public sealed class MoveHitboxWindow : EditorWindow
 
     private void DrawMovement()
     {
-        EditorGUILayout.LabelField("X / Y 이동", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("추격 · 이동 · 넉백", EditorStyles.boldLabel);
         startupSeconds = Mathf.Max(0, EditorGUILayout.FloatField("미리보기 준비 지연 (초)", startupSeconds));
         var so = new SerializedObject(move);
+        EditorGUILayout.PropertyField(so.FindProperty("allowManualMovement"), new GUIContent("이 행동 중 방향키 자유 이동"));
+        if (so.FindProperty("allowManualMovement").boolValue)
+        {
+            EditorGUILayout.PropertyField(so.FindProperty("manualMovementSpeed"), new GUIContent("자유 이동 기본 속도"));
+            EditorGUILayout.HelpBox("이동 방식이 '이동 없음'일 때만 방향키로 자유 이동합니다. 입력은 행동 중에도 매 프레임 갱신됩니다.", MessageType.Info);
+        }
         var mode = so.FindProperty("movementMode");
+        int previousMode = mode.enumValueIndex;
+        mode.enumValueIndex = EditorGUILayout.Popup("이동 방식", mode.enumValueIndex,
+            new[] { "이동 없음", "추격 (거리 유지)", "상대 관통", "고정 거리 전진", "고정 속도 전진", "X/Y 곡선" });
+        if (mode.enumValueIndex != previousMode && mode.enumValueIndex != (int)MovementMode.None &&
+            so.FindProperty("movementPhase").enumValueIndex == (int)MovementPhase.None)
+            so.FindProperty("movementPhase").enumValueIndex = (int)MovementPhase.StartupAndActive;
+        if (mode.enumValueIndex != (int)MovementMode.None)
+            EditorGUILayout.PropertyField(so.FindProperty("movementPhase"), new GUIContent("이동 적용 구간"));
+        var movement = (MovementMode)mode.enumValueIndex;
+        if (movement == MovementMode.StopAtRange || movement == MovementMode.FixedSpeedForward)
+        {
+            var speed = so.FindProperty("speed");
+            EditorGUILayout.PropertyField(speed, new GUIContent("이동 속도 (거리/초)"));
+            if (movement == MovementMode.StopAtRange) speed.floatValue = Mathf.Max(0, speed.floatValue);
+        }
+        if (movement == MovementMode.StopAtRange)
+        {
+            EditorGUILayout.PropertyField(so.FindProperty("stopDistance"), new GUIContent("추격 정지 거리"));
+            EditorGUILayout.HelpBox("지정 속도로 등속 추격합니다. 정지 거리는 캐릭터 중심 기준입니다. 상대의 몸 또는 활성 무기 히트박스에 닿으면 이 행동의 추격은 즉시 종료되고 재개하지 않습니다.", MessageType.Info);
+        }
+        if (movement == MovementMode.PassThroughTarget)
+            EditorGUILayout.PropertyField(so.FindProperty("passThroughOffset"), new GUIContent("상대 뒤 도착 거리"));
+        if (movement == MovementMode.FixedDistanceForward)
+            EditorGUILayout.PropertyField(so.FindProperty("fixedTravelDistance"), new GUIContent("전진 거리"));
+        EditorGUILayout.PropertyField(so.FindProperty("impactPowerBase"), new GUIContent("기본 위력"));
+        EditorGUILayout.PropertyField(so.FindProperty("impactPowerPerForce"), new GUIContent("힘 1당 추가 위력"));
+        EditorGUILayout.HelpBox("넉백 기본 거리 = max(0, 상대 위력 × 0.04 + 양쪽 위력 차이 × 0.02). 위력은 기본 위력 + 힘 1당 위력 × 실제 사용한 힘입니다.", MessageType.Info);
+        EditorGUILayout.HelpBox("넉백은 타격·방어·무기 충돌 판정 때 상대에게 적용됩니다. 0이면 밀지 않습니다. 직접 설정을 끄면 기존 힘 기반 계산을 사용합니다. 감속은 ActorManager의 공통 설정을 사용합니다.", MessageType.Info);
+        so.ApplyModifiedProperties();
         if ((MovementMode)mode.enumValueIndex != MovementMode.CurveXY)
         {
             editMovement = false;
@@ -438,7 +499,6 @@ public sealed class MoveHitboxWindow : EditorWindow
                 EditorGUILayout.HelpBox("대상 위치에 따라 달라지는 기존 이동은 이 창에서 경로를 예측하지 않습니다. X/Y 곡선 이동을 사용하면 지정한 경로를 표시합니다.", MessageType.Info);
             return;
         }
-        EditorGUILayout.PropertyField(so.FindProperty("movementPhase"), new GUIContent("이동 적용 구간"));
         EditorGUILayout.PropertyField(so.FindProperty("movementX"), new GUIContent("X 위치 곡선 (전방 +)"));
         EditorGUILayout.PropertyField(so.FindProperty("movementY"), new GUIContent("Y 위치 곡선 (위쪽 +)"));
         so.ApplyModifiedProperties();

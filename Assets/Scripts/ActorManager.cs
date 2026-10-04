@@ -1,5 +1,7 @@
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using Scripts.CharAIs;
 
 namespace Scripts
 {
@@ -15,6 +17,11 @@ namespace Scripts
 
     public class ActorManager : MonoBehaviour
     {
+        private int lastAiChargeSerial = -1;
+        private int _observedActionA;
+        private int _observedActionB;
+        public int TurnIndex { get; private set; }
+        public ExchangeResult LastExchange { get; private set; }
         private struct ExchangeInfo
         {
             public ExchangeResult result;
@@ -22,10 +29,10 @@ namespace Scripts
             public Hitbox hitboxB;
         }
 
-        private struct KnockbackSpeeds
+        private struct KnockbackDistances
         {
-            public float speedA;
-            public float speedB;
+            public float actorA;
+            public float actorB;
         }
 
         [Header("Actors")] public Actor actorA;
@@ -34,13 +41,12 @@ namespace Scripts
 
         [Header("Simulation")] public bool autoSimulate = true;
 
-        [Header("Defaults")] [Header("Knockback")] [SerializeField]
-        private float c;
-
-        [SerializeField] private float d;
-        [SerializeField] private float l;
-        [Min(0f)] public float knockbackFriction = 10f;
+        [Header("Knockback")]
+        [SerializeField, Min(0.05f)] private float knockbackDuration = .33f;
         [SerializeField] private float clashDecrease;
+        private Camera combatCamera;
+        private float cameraHeightOffset;
+        private float cameraBaseOrthographicSize;
 
         [Header("Turn Stop (Debug)")] [SerializeField, Min(0)]
         private int stopTurnsA;
@@ -57,6 +63,33 @@ namespace Scripts
             {
                 user = actorA, target = actorB
             };
+            combatCamera = Camera.main;
+            if (combatCamera != null && actorA != null && actorB != null)
+            {
+                cameraHeightOffset = combatCamera.transform.position.y - (actorA.Position.y + actorB.Position.y) * .5f;
+                cameraBaseOrthographicSize = combatCamera.orthographicSize;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            if (actorA == null || actorB == null) return;
+            if (combatCamera == null)
+            {
+                combatCamera = Camera.main;
+                if (combatCamera == null) return;
+                cameraHeightOffset = combatCamera.transform.position.y - (actorA.Position.y + actorB.Position.y) * .5f;
+                cameraBaseOrthographicSize = combatCamera.orthographicSize;
+            }
+
+            Vector2 midpoint = (actorA.Position + actorB.Position) * .5f;
+            Vector3 position = combatCamera.transform.position;
+            combatCamera.transform.position = new Vector3(midpoint.x, midpoint.y + cameraHeightOffset, position.z);
+            if (combatCamera.orthographic && combatCamera.aspect > 0f)
+            {
+                float halfWidth = Mathf.Abs(actorA.Position.x - actorB.Position.x) * .5f + 1f;
+                combatCamera.orthographicSize = Mathf.Max(cameraBaseOrthographicSize, halfWidth / combatCamera.aspect);
+            }
         }
 
         private void Update()
@@ -66,14 +99,34 @@ namespace Scripts
                 return;
             }
 
+            if (!actorA.OnlineControlled)
+                actorA.SetDirectionalInput(actorA.IsMoveRunning ? ReadArrowDirection() : 0);
+            if (!actorA.OnlineControlled && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+                actorA.ActionController.TryChargeCurrent();
+            if (!actorB.OnlineControlled && actorB.PlanMaker is SampleAI && actorB.IsMoveRunning &&
+                actorB.MoveProgress >= .5f && actorB.ActionController.NetworkActionSerial != lastAiChargeSerial)
+            {
+                lastAiChargeSerial = actorB.ActionController.NetworkActionSerial;
+                actorB.ActionController.TryChargeCurrent();
+            }
             Simulate(Time.deltaTime);
+        }
+
+        internal static int ReadArrowDirection()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return 0;
+            return (keyboard.rightArrowKey.isPressed ? 1 : 0) - (keyboard.leftArrowKey.isPressed ? 1 : 0);
         }
 
         public void Simulate(float deltaTime)
         {
             this.actorA.ForceUpdate(deltaTime);
             this.actorB.ForceUpdate(deltaTime);
+            PollNextMove(actorA);
+            PollNextMove(actorB);
             TryStartActors();
+            ObserveActionStarts();
             UpdateFacing();
             ApplyMovement(deltaTime);
 
@@ -81,18 +134,33 @@ namespace Scripts
                                      && actorA.IsReadyForExchange && actorB.IsReadyForExchange)
             {
                 ExchangeInfo exchange = ResolveExchange(actorA, actorB);
-                if (exchange.result == ExchangeResult.ABlocksB || exchange.result == ExchangeResult.BBlocksA ||
-                    exchange.result == ExchangeResult.AHitsB || exchange.result == ExchangeResult.BHitsA ||
-                    exchange.result == ExchangeResult.Clash)
-                {
-                    Debug.Log(exchange.result);
-                }
-
                 ApplyExchange(exchange);
+                if (exchange.result != ExchangeResult.None) LastExchange = exchange.result;
+                ObserveActionStarts();
             }
 
             actorA.Tick(deltaTime);
             actorB.Tick(deltaTime);
+        }
+
+        private void ObserveActionStarts()
+        {
+            int serialA = actorA.ActionController.NetworkActionSerial;
+            int serialB = actorB.ActionController.NetworkActionSerial;
+            if (serialA == _observedActionA && serialB == _observedActionB) return;
+            _observedActionA = serialA;
+            _observedActionB = serialB;
+            TurnIndex++;
+        }
+
+        private static void PollNextMove(Actor actor)
+        {
+            if (actor == null || !actor.IsMoveRunning || actor.PlanMaker == null || !actor.HasQueueSpace ||
+                actor.QueueCount > 0 && !(actor.PlanMaker is OnlineDuelPlanner)) return;
+            if (actor.PlanMaker is SampleAI && actor.PlanningMove != null && actor.PlanningMove.CanCharge &&
+                actor.MoveProgress < .5f) return;
+            if (actor.PlanMaker.GetPlan(actor) == PlanQueryState.Ready &&
+                actor.TryConsumePlannedMove(out Move planned)) actor.Enqueue(planned);
         }
 
         // 방향 전환
@@ -142,11 +210,6 @@ namespace Scripts
 
                 case FacingMode.UseActorDefault:
                 default:
-                    if (!actor.IsMoveRunning && actor.HasMoveVisual)
-                    {
-                        return;
-                    }
-
                     if (actor.IsMoveRunning && actor.IsReadyForExchange)
                     {
                         return;
@@ -213,14 +276,24 @@ namespace Scripts
 
         private static void ApplyMovement(Actor actor, Actor target, float deltaTime)
         {
-            if (actor == null || target == null || !actor.IsMoveRunning)
+            if (actor == null || target == null)
             {
                 return;
             }
 
+            // Current retains the last Move while its final pose is held. Input must
+            // only move an actor while that Move is actually playing.
+            if (!actor.IsMoveRunning) return;
+
             Move move = actor.Current.move;
             if (move == null)
             {
+                return;
+            }
+
+            if (move.AllowManualMovement && move.MovementMode == MovementMode.None)
+            {
+                MoveManually(actor, target, move.ManualMovementSpeed, deltaTime);
                 return;
             }
 
@@ -239,13 +312,14 @@ namespace Scripts
                     return;
 
                 case MovementMode.StopAtRange:
-                    MoveTowardRange(actor, target, move.StopDistance, move.Speed, deltaTime);
+                    MoveTowardRange(actor, target, move.StopDistance,
+                        Mathf.Max(0f, move.Speed) + actor.Current.chaseForce * move.ChaseSpeedPerForce, deltaTime);
                     return;
 
                 case MovementMode.PassThroughTarget:
                 {
                     float targetX = target.Position.x + (actor.MoveStartFacingSign * move.PassThroughOffset);
-                    MoveToward(actor, targetX, GetMovementProgress(actor, move));
+                    MoveToward(actor, targetX, GetMovementProgress(actor, move), deltaTime);
                     return;
                 }
 
@@ -259,39 +333,87 @@ namespace Scripts
                     float direction = actor.MoveStartFacingSign * Mathf.Sign(move.Speed);
                     float moveAmount = Mathf.Abs(move.Speed) * deltaTime;
 
-                    actor.MoveBy(new Vector2(direction * moveAmount, 0f));
+                    actor.MoveBy(new Vector2(actor.AdjustHorizontalMovement(direction * moveAmount, deltaTime), 0f));
                     return;
                 }
 
                 case MovementMode.FixedDistanceForward:
                 {
                     float targetX = actor.MoveStartPosition.x + (actor.MoveStartFacingSign * move.FixedTravelDistance);
-                    MoveToward(actor, targetX, GetMovementProgress(actor, move));
+                    MoveToward(actor, targetX, GetMovementProgress(actor, move), deltaTime);
                     return;
                 }
             }
         }
 
+        private static void MoveManually(Actor actor, Actor target, float speed, float deltaTime)
+        {
+            int direction = actor.DirectionalInput;
+            if (direction == 0 || speed <= 0f || actor._recoilVelocity.sqrMagnitude > 0f) return;
+            // This is direct idle movement, not an existing motion to accelerate.
+            float step = direction * speed * deltaTime;
+            float distance = Mathf.Abs(step);
+            Physics2D.SyncTransforms();
+            foreach (var own in ChaseColliders(actor))
+            foreach (var other in ChaseColliders(target))
+                distance = Mathf.Min(distance, ChaseContactDistance(own.bounds, other.bounds, direction));
+            if (distance > 0f) actor.MoveBy(new Vector2(direction * distance, 0f));
+        }
+
         private static void MoveTowardRange(Actor actor, Actor target, float stopDistance, float speed, float deltaTime)
         {
+            var controller = actor.ActionController;
+            if (controller != null && controller.ChaseStopped) return;
             float deltaX = target.Position.x - actor.Position.x;
             float distanceX = Mathf.Abs(deltaX);
             float remaining = distanceX - stopDistance;
 
-            if (remaining <= 0f)
+            float signedStep = Mathf.Sign(deltaX) * Mathf.Max(0, speed) * deltaTime;
+            float moveAmount = Mathf.Min(Mathf.Abs(actor.AdjustHorizontalMovement(signedStep, deltaTime)), Mathf.Max(0, remaining));
+            // Use the same world-space bounds as combat contact, swept over this step.
+            // Disabled/consumed weapons and inactive weapon frames do not block pursuit.
+            Physics2D.SyncTransforms();
+            foreach (var own in ChaseColliders(actor))
+            foreach (var other in ChaseColliders(target))
             {
-                return;
+                float contact = ChaseContactDistance(own.bounds, other.bounds, Mathf.Sign(deltaX));
+                if (contact > moveAmount) continue;
+                moveAmount = contact;
+                if (controller != null) controller.ChaseStopped = true;
             }
-
-            float moveAmount = Mathf.Min(speed * deltaTime, remaining);
+            if (moveAmount <= 0f) return;
             actor.MoveBy(new Vector2(Mathf.Sign(deltaX) * moveAmount, 0f));
         }
 
-        private static void MoveToward(Actor actor, float targetX, float progress)
+        private static System.Collections.Generic.IEnumerable<Collider2D> ChaseColliders(Actor actor)
+        {
+            var move = actor.Current.move;
+            if (move == null) yield break;
+            var body = move.BodyCollider;
+            if (body != null && body.enabled && body.gameObject.activeInHierarchy) yield return body;
+            foreach (var weapon in move.WeaponHitboxes)
+            {
+                if (weapon == null || !weapon.IsActiveAt(actor.MoveProgress)) continue;
+                var collider = weapon.Collider;
+                if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy) yield return collider;
+            }
+        }
+
+        private static float ChaseContactDistance(Bounds own, Bounds other, float direction)
+        {
+            if (own.max.y < other.min.y || own.min.y > other.max.y) return float.PositiveInfinity;
+            if (own.max.x >= other.min.x && own.min.x <= other.max.x)
+                return direction * (other.center.x - own.center.x) < 0f ? float.PositiveInfinity : 0f;
+            float distance = direction >= 0 ? other.min.x - own.max.x : own.min.x - other.max.x;
+            return distance >= 0 ? distance : float.PositiveInfinity;
+        }
+
+        private static void MoveToward(Actor actor, float targetX, float progress, float deltaTime)
         {
             float startX = actor.MoveStartPosition.x;
             float x = Mathf.Lerp(startX, targetX, Mathf.Clamp01(progress));
-            actor.MoveTo(new Vector2(x, actor.Position.y));
+            float delta = actor.ActionController.ConsumePathSample(x - startX);
+            actor.MoveBy(new Vector2(actor.AdjustHorizontalMovement(delta, deltaTime), 0f));
         }
 
         public void TryStartActors()
@@ -471,12 +593,7 @@ namespace Scripts
 
         public int SelectForce(Actor actor, Move move)
         {
-            if (actor != null && move != null && move.UsesForce)
-            {
-                return actor.ConsumePendingForce();
-            }
-
-            return 0;
+            return move != null && move.UsesForce ? 1 : 0;
         }
 
         private ExchangeInfo ResolveExchange(Actor a, Actor b)
@@ -541,7 +658,6 @@ namespace Scripts
             var aStance = aState.move != null && exchange.hitboxA != null
                 ? (int)(aState.move.getStanceDamage(aState.force) * exchange.hitboxA.StanceCoef)
                 : 0;
-            Debug.Log(bState.move);
             var bStance = bState.move != null && exchange.hitboxB != null
                 ? (int)(bState.move.getStanceDamage(bState.force) * exchange.hitboxB.StanceCoef)
                 : 0;
@@ -564,6 +680,8 @@ namespace Scripts
                 targetHpDamage = bDamage,
             };
 
+            // Capture the attacking Moves before an interrupt replaces the current action.
+            KnockbackDistances knockback = CalculateKnockbackDistances(context);
             switch (exchange.result)
             {
                 case ExchangeResult.Clash:
@@ -582,24 +700,24 @@ namespace Scripts
                     DisableHitbox(exchange.hitboxA);
                     DisableHitbox(exchange.hitboxB);
 
-                    actorA.ApplyStanceDamage((int)(context.targetStanceDamage * clashDecrease));
-                    actorB.ApplyStanceDamage((int)(context.userStanceDamage * clashDecrease));
+                    ApplyStanceDamageAndReaction(actorA, (int)(context.targetStanceDamage * clashDecrease),
+                        null, context);
+                    ApplyStanceDamageAndReaction(actorB, (int)(context.userStanceDamage * clashDecrease),
+                        null, context);
                     break;
 
                 case ExchangeResult.ABlocksB:
                     aState.move.OnAttack(actorA, context);
                     DisableHitbox(exchange.hitboxA);
-                    actorB.Interrupt(MoveEventType.Guard, InterruptReason.Guard, context);
-                    actorB.ApplyStanceDamage(context.userStanceDamage);
-                    actorA.ApplyStanceDamage(Mathf.Max(1, context.targetStanceDamage));
+                    ApplyStanceDamageAndReaction(actorB, context.userStanceDamage, MoveEventType.Guard, context);
+                    ApplyStanceDamageAndReaction(actorA, Mathf.Max(1, context.targetStanceDamage), null, context);
                     break;
 
                 case ExchangeResult.BBlocksA:
                     bState.move.OnAttack(actorB, context);
                     DisableHitbox(exchange.hitboxB);
-                    actorA.Interrupt(MoveEventType.Guard, InterruptReason.Guard, context);
-                    actorA.ApplyStanceDamage(context.targetStanceDamage);
-                    actorB.ApplyStanceDamage(Mathf.Max(1, context.userStanceDamage));
+                    ApplyStanceDamageAndReaction(actorA, context.targetStanceDamage, MoveEventType.Guard, context);
+                    ApplyStanceDamageAndReaction(actorB, Mathf.Max(1, context.userStanceDamage), null, context);
                     break;
 
                 case ExchangeResult.AHitsB:
@@ -607,8 +725,8 @@ namespace Scripts
                     DisableHitbox(exchange.hitboxA);
                     context.userHpDamage =
                         Mathf.RoundToInt(context.userHpDamage * actorA.ConsumeNextAttackDamageMultiplier());
-                    actorB.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorB.ApplyHpDamage(context.userHpDamage);
+                    ApplyStanceDamageAndReaction(actorB, context.userStanceDamage, MoveEventType.Hit, context);
                     break;
 
                 case ExchangeResult.BHitsA:
@@ -616,13 +734,30 @@ namespace Scripts
                     DisableHitbox(exchange.hitboxB);
                     context.targetHpDamage =
                         Mathf.RoundToInt(context.targetHpDamage * actorB.ConsumeNextAttackDamageMultiplier());
-                    actorA.Interrupt(MoveEventType.Hit, InterruptReason.Hit, context);
                     actorA.ApplyHpDamage(context.targetHpDamage);
+                    ApplyStanceDamageAndReaction(actorA, context.targetStanceDamage, MoveEventType.Hit, context);
                     break;
             }
 
-            KnockbackSpeeds knockback = CalculateKnockbackSpeeds(context);
             ApplyKnockback(knockback);
+        }
+
+        private static void ApplyStanceDamageAndReaction(Actor actor, int damage, MoveEventType? normalReaction,
+            CombatContext context)
+        {
+            bool hadStance = actor.Stance > 0;
+            actor.ApplyStanceDamage(damage);
+            bool stanceBroken = hadStance && actor.IsGuardBroken;
+            if (stanceBroken)
+            {
+                actor.InterruptWithFollowUps(MoveEventType.Hit, InterruptReason.Hit, context, 2);
+            }
+            else if (normalReaction.HasValue)
+            {
+                MoveEventType trigger = normalReaction.Value;
+                actor.Interrupt(trigger, trigger == MoveEventType.Guard ? InterruptReason.Guard : InterruptReason.Hit,
+                    context);
+            }
         }
 
         private static bool Touching(Collider2D lhs, Collider2D rhs)
@@ -730,25 +865,22 @@ namespace Scripts
             _consumedStopBInCurrentWindow = true;
         }
 
-        private KnockbackSpeeds CalculateKnockbackSpeeds(CombatContext context)
+        private KnockbackDistances CalculateKnockbackDistances(CombatContext context)
         {
-            var aforce = context.user.Current.force;
-            var bforce = context.target.Current.force;
-
-            var apower = context.user.Current.move.getPower(aforce);
-            var bpower = context.target.Current.move.getPower(bforce);
-
-            var diff = Mathf.Abs(apower - bpower);
-            var coef = l * (diff + c) / (diff + d);
-
-            return new KnockbackSpeeds()
+            float aPower = context.user.Current.move.GetImpactPower(context.user.Current.force);
+            float bPower = context.target.Current.move.GetImpactPower(context.target.Current.force);
+            return new KnockbackDistances()
             {
-                speedA = bpower * coef,
-                speedB = apower * coef,
+                actorA = CalculateKnockbackDistance(bPower, aPower),
+                actorB = CalculateKnockbackDistance(aPower, bPower),
             };
         }
 
-        private void ApplyKnockback(KnockbackSpeeds speeds)
+        // Equal powers trade space; the power difference shifts the exchange toward the weaker fighter.
+        private static float CalculateKnockbackDistance(float incomingPower, float ownPower) =>
+            Mathf.Max(0f, .06f * incomingPower + .03f * (incomingPower - ownPower));
+
+        private void ApplyKnockback(KnockbackDistances distances)
         {
             Vector2 delta = actorA.Position - actorB.Position;
             float sign = delta.x >= 0f ? 1f : -1f;
@@ -756,8 +888,8 @@ namespace Scripts
             Vector2 dirA = new Vector2(sign, 0f);
             Vector2 dirB = -dirA;
 
-            actorA.ResetAndApplyKnockback(dirA, speeds.speedA, knockbackFriction);
-            actorB.ResetAndApplyKnockback(dirB, speeds.speedB, knockbackFriction);
+            actorA.ResetAndApplyKnockbackDistance(dirA, distances.actorA, knockbackDuration);
+            actorB.ResetAndApplyKnockbackDistance(dirB, distances.actorB, knockbackDuration);
         }
     }
 }

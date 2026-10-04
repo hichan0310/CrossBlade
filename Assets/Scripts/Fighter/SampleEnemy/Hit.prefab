@@ -114,7 +114,7 @@ MonoBehaviour:
   damagePerPower: 0
   stanceDamageBase: 0
   stanceDamagePerPower: 0
-  stanceRecovery: 15
+  stanceRecovery: 0
   stanceUsageBase: 0
   stanceUsagePerPower: 0
   hitMove: {fileID: 4863790163555513521}

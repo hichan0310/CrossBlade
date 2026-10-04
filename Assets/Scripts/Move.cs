@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 
 namespace Scripts
@@ -52,6 +51,7 @@ namespace Scripts
         [Header("Identity")]
         [SerializeField] private string moveId = "move";
         [SerializeField] private MoveCategory category = MoveCategory.Neutral;
+        [SerializeField] private bool isIdle;
 
         [SerializeField] private List<Hitbox> weaponHitboxes = new List<Hitbox>();
         [SerializeField] private Collider2D bodyCollider;
@@ -71,8 +71,21 @@ namespace Scripts
         [SerializeField, Min(0f)] private float stanceDamageBase;
         [SerializeField, Min(0f)] private float stanceDamagePerPower;
         [SerializeField, Min(0f)] private int stanceRecovery;
-        [SerializeField, Min(0f)] private float stanceUsageBase;
-        [SerializeField, Min(0f)] private float stanceUsagePerPower;
+        [SerializeField, Min(0f)] private float stanceUsageBase = 13f;
+        [SerializeField, Min(0f)] private float stanceUsagePerPower = 5f;
+
+        [Header("Charge / Carry")]
+        [SerializeField] private bool canCharge;
+        [SerializeField] private bool acceptsCarriedForce;
+        [SerializeField, Min(0)] private int chargeStanceCost;
+        [SerializeField, Range(0, 4)] private int chaseForceAllocation;
+        [SerializeField, Min(0f)] private float chaseSpeedPerForce = 1.5f;
+
+        [Header("Impact Power")]
+        [SerializeField, Min(0f)] private float impactPowerBase;
+        [SerializeField, Min(0f)] private float impactPowerPerForce;
+        internal float GetImpactPower(int force) =>
+            Mathf.Max(0f, impactPowerBase) + Mathf.Max(0f, impactPowerPerForce) * Mathf.Max(0, force);
 
         [Header("Graph")]
         [SerializeField] private Move hitMove;
@@ -88,6 +101,8 @@ namespace Scripts
         
 
         [Header("Movement")]
+        [SerializeField] private bool allowManualMovement;
+        [SerializeField, Min(0f)] private float manualMovementSpeed = 1.75f;
         [SerializeField] private MovementMode movementMode = MovementMode.None;
         [SerializeField] private MovementPhase movementPhase = MovementPhase.None;
         [SerializeField] private float speed = 0f;
@@ -112,7 +127,13 @@ namespace Scripts
         [SerializeField] private bool showPreviousVisual = false;
 
         internal MoveCategory Category => category;
+        internal bool IsIdle => isIdle;
         internal bool UsesForce => category == MoveCategory.Attack;
+        internal bool CanCharge => canCharge;
+        internal bool AcceptsCarriedForce => acceptsCarriedForce;
+        internal int ChargeStanceCost => chargeStanceCost;
+        internal int ChaseForceAllocation => chaseForceAllocation;
+        internal float ChaseSpeedPerForce => chaseSpeedPerForce;
 
         internal bool DelayVisualReveal => delayVisualReveal;
         internal float VisualRevealProgress => visualRevealProgress;
@@ -121,6 +142,8 @@ namespace Scripts
 
 
         internal MovementMode MovementMode => movementMode;
+        internal bool AllowManualMovement => allowManualMovement;
+        internal float ManualMovementSpeed => manualMovementSpeed;
         internal MovementPhase MovementPhase => movementPhase;
         internal float Speed => speed;
         internal float StopDistance => stopDistance;
@@ -177,21 +200,20 @@ namespace Scripts
         internal virtual void Play(ActorType actorType, CombatContext combatContext, int force, out int carryOut)
         {
             Actor actor = actorType == ActorType.Player ? combatContext.user : combatContext.target;
-            actor.ApplyStanceDamage((int)(force*stanceUsagePerPower+stanceUsageBase));
+            actor.ApplyStanceDamage(Mathf.CeilToInt(force*stanceUsagePerPower+stanceUsageBase));
             foreach (Hitbox weaponHitbox in this.weaponHitboxes)
             {
                 weaponHitbox.Collider.enabled = true;
                 weaponHitbox.Collider.gameObject.SetActive(true);
             }
 
-            carryOut = 0;
+            carryOut = canCharge ? Mathf.Clamp(force, 0, 4) : 0;
         }
 
         internal virtual Move OnHit(Actor actor, CombatContext combatContext)
         {
             actor.ClearQueuedMovesForInterrupt();
             var target = actor.CombatMoveGraph != null ? actor.CombatMoveGraph.ResolveReaction(this, false) : hitMove;
-            actor.EnqueueInterruptFollowUps(target, 1);
             return target;
         }
 
@@ -199,7 +221,6 @@ namespace Scripts
         {
             actor.ClearQueuedMovesForInterrupt();
             var target = actor.CombatMoveGraph != null ? actor.CombatMoveGraph.ResolveReaction(this, true) : guardMove;
-            actor.EnqueueInterruptFollowUps(target, 2);
             return target;
         }
 

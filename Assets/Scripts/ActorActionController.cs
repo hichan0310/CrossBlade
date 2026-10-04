@@ -6,6 +6,7 @@ namespace Scripts
 {
     public class ActorActionController : MonoBehaviour
     {
+        [SerializeField, Min(1)] private int maxQueuedMoves = 5;
         private Actor _owner;
 
         private readonly Queue<QueuedMove> _queue = new Queue<QueuedMove>();
@@ -17,21 +18,65 @@ namespace Scripts
         private bool _currentMoveExchanged;
         private float _moveStartupRemaining;
         private Vector2 _moveStartPosition;
+        private float _moveGroundY;
+        private float _lastPathSample;
+        private Vector2 _lastCurveSample;
         private int _moveStartFacingSign = 1;
         private bool _startFacingConsumed;
         private int selectedForce = 0;
         private Move _currentSourceMove;
+        internal Move NetworkSourceMove { get; private set; }
+        internal int NetworkActionSerial { get; private set; }
+        internal int CurrentForce => _hasCurrent ? _current.force : _carriedForce;
+        internal bool ChaseStopped { get; set; }
+        internal float ConsumePathSample(float sample)
+        {
+            float delta = sample - _lastPathSample;
+            _lastPathSample = sample;
+            return delta;
+        }
+
+        internal void ApplyReplica(Move source, int serial, bool running, float progress)
+        {
+            EnsureOwner();
+            if (source != NetworkSourceMove || serial != NetworkActionSerial)
+            {
+                if (_owner.CurrentMoveVisual != null) _owner.ReleaseMoveInstanceFromAction(_owner.CurrentMoveVisual);
+                var instance = source != null ? _owner.CreateMoveInstanceFromAction(source) : null;
+                if (instance != null) instance.BindGraphFromSource(source);
+                _current = new MoveRuntime(instance, 0);
+                NetworkSourceMove = source; NetworkActionSerial = serial;
+            }
+            _hasCurrent = running;
+            float elapsed = Mathf.Clamp01(progress) * ((source != null ? source.Duration : 0f) + _owner.MoveStartDelay);
+            _moveStartupRemaining = Mathf.Max(0, _owner.MoveStartDelay - elapsed);
+            _current.elapsed = Mathf.Max(0, elapsed - _owner.MoveStartDelay);
+            _owner.RefreshMoveVisualStateFromAction(running, progress);
+        }
 
         internal bool IsMoveRunning => _hasCurrent;
         internal bool IsReadyForExchange => _hasCurrent && _moveStartupRemaining <= 0f;
         internal bool HasResolvedExchange => _currentMoveExchanged;
         internal MoveRuntime Current => _current;
         internal int QueueCount => _queue.Count;
+        internal int MaxQueuedMoves => Mathf.Max(1, maxQueuedMoves);
+        internal int NextQueueRecoveryBonus => _queue.Count * 5;
         internal int ChainCount => _chainCount;
         internal float StartupRemaining => _moveStartupRemaining;
         internal Vector2 MoveStartPosition => _moveStartPosition;
         internal int MoveStartFacingSign => _moveStartFacingSign;
         internal Move nextMove => _queue.Count > 0 ? _queue.Peek().move : null;
+        internal Move PlanningSourceMove
+        {
+            get
+            {
+                Move tail = null;
+                foreach (var queued in _queue) tail = queued.move;
+                if (tail != null) return tail;
+                if (_currentSourceMove != null) return _currentSourceMove;
+                return _current.move != null ? _current.move : null;
+            }
+        }
 
         internal float StartupProgress
         {
@@ -119,19 +164,15 @@ namespace Scripts
             _moveStartFacingSign = _owner.FacingSign;
         }
 
-        internal void Enqueue(Move move)
+        internal bool Enqueue(Move move)
         {
-            if (move == null)
+            if (move == null || _queue.Count >= MaxQueuedMoves)
             {
-                return;
+                return false;
             }
 
-            if (!_hasCurrent && _queue.Count == 0)
-            {
-                _carriedForce = 0;
-            }
-
-            _queue.Enqueue(new QueuedMove { move = move });
+            _queue.Enqueue(new QueuedMove { move = move, queueRecoveryBonus = NextQueueRecoveryBonus });
+            return true;
         }
 
         internal void ClearQueuedMovesForInterrupt()
@@ -178,8 +219,19 @@ namespace Scripts
                 return false;
             }
 
-            int inputForce = forceSelector != null ? forceSelector(_owner, queued.move) : 3;
+            int inputForce = forceSelector != null ? forceSelector(_owner, queued.move) : (queued.move.UsesForce ? 1 : 0);
             return StartMove(queued, inputForce, combatContext);
+        }
+
+        internal bool TryChargeCurrent()
+        {
+            EnsureOwner();
+            if (_owner == null || !_hasCurrent || _currentSourceMove == null || !_currentSourceMove.CanCharge ||
+                _queue.Count > 0 || _owner.HasPlannedMove ||
+                _current.force >= 4 || !_owner.TrySpendStance(_currentSourceMove.ChargeStanceCost)) return false;
+            _current.force++;
+            _currentQueuedMove?.SetForceCarryOut(_current.force);
+            return true;
         }
 
         internal void Tick(float deltaTime)
@@ -201,25 +253,37 @@ namespace Scripts
             if (_moveStartupRemaining > 0f)
             {
                 _moveStartupRemaining = Mathf.Max(0f, _moveStartupRemaining - deltaTime);
-                _owner.ApplyRecoilFromActionController(deltaTime);
-                ApplyCurveMovement(true);
+                Vector2 recoil = _owner.ApplyRecoilFromActionController(deltaTime, !UsesCurveMovementAt(true));
+                _moveStartPosition += recoil;
+                ApplyCurveMovement(true, recoil, deltaTime);
                 _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
                 return;
             }
 
             _current.elapsed += deltaTime;
-            _owner.ApplyRecoilFromActionController(deltaTime);
-            ApplyCurveMovement(false);
+            Vector2 activeRecoil = _owner.ApplyRecoilFromActionController(deltaTime, !UsesCurveMovementAt(false));
+            _moveStartPosition += activeRecoil;
+            ApplyCurveMovement(false, activeRecoil, deltaTime);
 
             if (_current.IsDone)
             {
+                // Sample the exact final frame before the action becomes idle/waiting.
+                _owner.RefreshMoveVisualStateFromAction(true, 1f);
                 FinishCurrentMove();
             }
 
             _owner.RefreshMoveVisualStateFromAction(_hasCurrent, MoveProgress);
         }
 
-        private void ApplyCurveMovement(bool startup)
+        private bool UsesCurveMovementAt(bool startup)
+        {
+            var move = _current.move;
+            return move != null && move.MovementMode == MovementMode.CurveXY &&
+                   (move.MovementPhase == MovementPhase.StartupAndActive ||
+                    (startup ? move.MovementPhase == MovementPhase.StartupOnly : move.MovementPhase == MovementPhase.ActiveOnly));
+        }
+
+        private void ApplyCurveMovement(bool startup, Vector2 recoil, float deltaTime)
         {
             var move = _current.move;
             if (move == null || move.MovementMode != MovementMode.CurveXY) return;
@@ -239,10 +303,23 @@ namespace Scripts
                     break;
                 default: return;
             }
-            _owner.MoveTo(_moveStartPosition + move.EvaluateMovementOffset(progress, _moveStartFacingSign));
+            // Authored X curves use the mannequin's local horizontal axis, which is
+            // opposite the combat world's facing axis. Convert only at runtime;
+            // keep the user's curve keys and editor preview coordinates intact.
+            Vector2 sample = move.EvaluateMovementOffset(progress, -_moveStartFacingSign);
+            Vector2 delta = sample - _lastCurveSample;
+            _lastCurveSample = sample;
+            delta.x = _owner.AdjustHorizontalMovement(delta.x, deltaTime);
+            _owner.MoveTo(_owner.Position + recoil + delta);
         }
 
         internal void Interrupt(MoveEventType trigger, InterruptReason reason, CombatContext combatContext)
+        {
+            InterruptWithFollowUps(trigger, reason, combatContext, 1);
+        }
+
+        internal void InterruptWithFollowUps(MoveEventType trigger, InterruptReason reason,
+            CombatContext combatContext, int followUpCount)
         {
             EnsureOwner();
 
@@ -252,7 +329,6 @@ namespace Scripts
             }
 
             MoveRuntime interrupted = _current;
-            QueuedMove interruptedQueuedMove = _currentQueuedMove;
             Move interruptedSourceMove = _currentSourceMove;
             Move next = null;
 
@@ -260,8 +336,10 @@ namespace Scripts
             _currentQueuedMove = null;
             _currentSourceMove = null;
             _carriedForce = 0;
+            _owner.CancelPlanning();
             _currentMoveExchanged = false;
             _moveStartupRemaining = 0f;
+            RestoreGroundHeightAfterCurve();
 
             if (_owner.HasVisualController)
             {
@@ -288,12 +366,9 @@ namespace Scripts
             }
 
             QueuedMove queued = new QueuedMove { move = next };
-            if (interruptedQueuedMove != null)
-            {
-                queued.forceCarryIn = interruptedQueuedMove.forceCarryOut;
-            }
-
-            StartMove(queued, 0, combatContext);
+            if (StartMove(queued, 0, combatContext) && followUpCount > 0 &&
+                (followUpCount > 1 || interruptedSourceMove == null || !interruptedSourceMove.SkipAdditionalInterruptFollowUp))
+                EnqueueInterruptFollowUps(next, followUpCount);
         }
 
         internal void MarkCurrentMoveExchanged()
@@ -316,7 +391,8 @@ namespace Scripts
                 _owner.ReleaseMoveInstanceFromAction(_owner.CurrentMoveVisual);
             }
 
-            selectedForce = Mathf.Clamp(inputForce, 1, 5);
+            // The legacy force selector cannot bypass charge. Attacks always start at one.
+            selectedForce = queued.move.UsesForce ? 1 : 0;
             Move sourceMove = queued.move;
             if (sourceMove != null && (sourceMove.name.Contains("(Clone)") || sourceMove.name.Contains("__DYING")))
             {
@@ -328,20 +404,29 @@ namespace Scripts
                 return false;
             }
             _currentSourceMove = sourceMove;
+            NetworkSourceMove = sourceMove;
+            NetworkActionSerial++;
             runtimeMove.BindGraphFromSource(sourceMove);
             //_owner.ApplyMoveStartStanceCostFromAction(runtimeMove);
             _owner.BeginPreviousVisualFromAction(runtimeMove.DelayVisualReveal && runtimeMove.ShowPreviousVisual);
-            int carriedForce = _carriedForce;
+            int carriedForce = sourceMove.AcceptsCarriedForce ? _carriedForce : 0;
             _carriedForce = 0;
 
             queued.forceCarryIn = carriedForce;
             _currentQueuedMove = queued;
-            _current = new MoveRuntime(runtimeMove, selectedForce + carriedForce);
+            int chaseForce = sourceMove.UsesForce && sourceMove.MovementMode == MovementMode.StopAtRange
+                ? Mathf.Min(carriedForce, sourceMove.ChaseForceAllocation) : 0;
+            _current = new MoveRuntime(runtimeMove, selectedForce + carriedForce - chaseForce);
+            _current.chaseForce = chaseForce;
             _hasCurrent = true;
             _currentMoveExchanged = false;
+            ChaseStopped = false;
             _moveStartupRemaining = _owner.MoveStartDelay;
 
             _moveStartPosition = _owner.Position;
+            _moveGroundY = _owner.Position.y;
+            _lastPathSample = 0f;
+            _lastCurveSample = Vector2.zero;
             _moveStartFacingSign = _owner.FacingSign;
             _startFacingConsumed = false;
 
@@ -356,25 +441,30 @@ namespace Scripts
         private void FinishCurrentMove()
         {
             MoveRuntime finished = _current;
+            RestoreGroundHeightAfterCurve();
             if (finished.move != null && finished.move.UsesForce)
             {
-                _owner.GainSpecialForce(selectedForce);
+                _owner.GainSpecialForce(finished.force);
             }
             QueuedMove finishedQueuedMove = _currentQueuedMove;
             Move finishedSourceMove = _currentSourceMove;
 
             _hasCurrent = false;
             _currentQueuedMove = null;
-            _currentSourceMove = null;
+            _currentSourceMove = finishedSourceMove;
             _currentMoveExchanged = false;
             _moveStartupRemaining = 0f;
 
             if (finished.move != null)
             {
-                _owner.RecoverStance(finished.move.StanceRecovery);
+                int recovery = _owner.BaseStanceRecoveryPerMove + finished.move.StanceRecovery +
+                               (finishedQueuedMove != null ? finishedQueuedMove.queueRecoveryBonus : 0);
+                if (finished.move.Category == MoveCategory.HitReaction)
+                    recovery = Mathf.FloorToInt(recovery * .5f);
+                _owner.RecoverStance(recovery);
             }
 
-            _carriedForce = finishedQueuedMove != null ? finishedQueuedMove.forceCarryOut : 0;
+            _carriedForce = _queue.Count > 0 && finishedQueuedMove != null ? finishedQueuedMove.forceCarryOut : 0;
 
             if (_queue.Count > 0)
             {
@@ -390,6 +480,18 @@ namespace Scripts
             {
                 return;
             }     
+        }
+
+        private void RestoreGroundHeightAfterCurve()
+        {
+            if (_owner == null || _current.move == null || _current.move.MovementMode != MovementMode.CurveXY)
+                return;
+
+            // Authored Y curves may end above or below zero. Keep their motion
+            // during the action, but do not carry that offset into later moves.
+            Vector2 position = _owner.Position;
+            if (!Mathf.Approximately(position.y, _moveGroundY))
+                _owner.MoveTo(new Vector2(position.x, _moveGroundY));
         }
     }
 }

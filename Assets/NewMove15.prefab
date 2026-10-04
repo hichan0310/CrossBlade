@@ -124,7 +124,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: NewMove15
-  category: 0
+  category: 4
   weaponHitboxes: []
   bodyCollider: {fileID: 9190146733990774915}
   duration: 0.3
@@ -133,6 +133,8 @@ MonoBehaviour:
   damagePerPower: 0
   stanceDamageBase: 0
   stanceDamagePerPower: 0
+  impactPowerBase: 0
+  impactPowerPerForce: 0
   stanceRecovery: 0
   stanceUsageBase: 0
   stanceUsagePerPower: 0
@@ -140,7 +142,7 @@ MonoBehaviour:
   guardMove: {fileID: 0}
   after:
   - {fileID: 3095244410870162631, guid: 13f6fe568b626e7ebb4aa84d4d73f968, type: 3}
-  guardable: 1
+  guardable: 0
   skipAdditionalInterruptFollowUp: 0
   facingMode: 0
   movementMode: 5

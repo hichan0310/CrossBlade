@@ -107,6 +107,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Scripts.Move
   moveId: Idle
   category: 0
+  isIdle: 1
   weaponHitboxes: []
   bodyCollider: {fileID: 233149699117509991}
   duration: 0.3
@@ -114,7 +115,7 @@ MonoBehaviour:
   damagePerPower: 0
   stanceDamageBase: 0
   stanceDamagePerPower: 0
-  stanceRecovery: 10
+  stanceRecovery: 5
   stanceUsageBase: 0
   stanceUsagePerPower: 0
   hitMove: {fileID: 4863790163555513521, guid: 688df75aaf5cf5d82acd2cf66da4d0f3, type: 3}

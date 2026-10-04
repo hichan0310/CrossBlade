@@ -15,10 +15,41 @@ namespace Scripts
         [Tooltip("Hide only the Move root's legacy character sprite; child sprites and effects remain available.")]
         [SerializeField] private bool replaceMoveRootSprite = true;
         private Actor _actor;
+        private bool graphCharacterCreated;
+
+        private void EnsureGraphCharacter()
+        {
+            if (graphCharacterCreated) return;
+            _actor = GetComponent<Actor>();
+            var graph = _actor != null ? _actor.CombatMoveGraph : null;
+            if (graph == null || graph.previewCharacter == null) return;
+            // A scene-authored graph model is visible in edit mode and also serves at runtime.
+            if (characterPlayer != null && characterPlayer.gameObject.name == "GraphCharacter" &&
+                characterPlayer.AnimationRoot != null)
+            {
+                characterPlayer.Configure(characterPlayer.AnimationRoot, graph.motionRootPath, graph.previewYaw,
+                    graph.startMove != null ? graph.startMove.CharacterAnimation : null);
+                graphCharacterCreated = true;
+                return;
+            }
+            if (characterPlayer != null) characterPlayer.gameObject.SetActive(false);
+            var facing = new GameObject("GraphCharacter");
+            facing.transform.SetParent(transform, false);
+            var model = Instantiate(graph.previewCharacter, facing.transform);
+            model.transform.localPosition = Vector3.zero;
+            foreach (var previous in model.GetComponentsInChildren<CharacterAnimationPlayer>(true)) previous.enabled = false;
+            characterPlayer = facing.AddComponent<CharacterAnimationPlayer>();
+            characterPlayer.Configure(model, graph.motionRootPath, graph.previewYaw,
+                graph.startMove != null ? graph.startMove.CharacterAnimation : null);
+            graphCharacterCreated = true;
+        }
 
         private void Awake()
         {
             _actor = GetComponent<Actor>();
+            EnsureGraphCharacter();
+            if (_actor != null && _actor.CombatMoveGraph != null && _actor.CombatMoveGraph.previewCharacter != null)
+                MoveAttachmentAxes.ApplyTo(moveMount);
             characterPlayer?.Evaluate(null, 0f, _actor != null ? _actor.FacingSign : 1);
         }
 
@@ -52,6 +83,7 @@ namespace Scripts
 
         internal Move CreateMoveInstance(Move template)
         {
+            EnsureGraphCharacter();
             if (template == null)
             {
                 return null;
@@ -87,7 +119,6 @@ namespace Scripts
             {
                 _currentMoveInstance = null;
                 currentMoveDebug = null;
-                characterPlayer?.Evaluate(null, 0f, _actor != null ? _actor.FacingSign : 1);
             }
 
             Destroy(instance.gameObject);
@@ -226,8 +257,10 @@ namespace Scripts
 
         internal void RefreshMoveVisualState(bool hasCurrent, float moveProgress)
         {
-            characterPlayer?.Evaluate(hasCurrent ? _currentMoveInstance : null, moveProgress,
-                _actor != null ? _actor.FacingSign : 1);
+            // Between actions, keep the last sampled pose until the next Move starts.
+            if (hasCurrent && _currentMoveInstance != null)
+                characterPlayer?.Evaluate(_currentMoveInstance, moveProgress,
+                    _actor != null ? _actor.FacingSign : 1);
             HideReplacedSprite();
             if (_currentMoveInstance == null)
             {
@@ -307,6 +340,19 @@ namespace Scripts
                 var emission = particleSystems[i].emission;
                 emission.enabled = visible;
             }
+        }
+    }
+
+    // The authored Move-local X axis is opposite the 3D mannequin's combat-facing X.
+    // Keep the conversion on the scene/runtime mount, never on the source prefab.
+    public static class MoveAttachmentAxes
+    {
+        public static void ApplyTo(Transform mount)
+        {
+            if (mount == null) return;
+            Vector3 scale = mount.localScale;
+            scale.x = -Mathf.Abs(scale.x);
+            mount.localScale = scale;
         }
     }
 }

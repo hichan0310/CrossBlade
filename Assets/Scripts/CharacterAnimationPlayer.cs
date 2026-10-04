@@ -27,6 +27,17 @@ namespace Scripts
 
         private void Awake() => Initialize();
 
+        internal void Configure(GameObject root, string rootPath, float yaw, AnimationClip pose)
+        {
+            animationRoot = root;
+            motionRoot = string.IsNullOrEmpty(rootPath) ? null : root.transform.Find(rootPath);
+            rightFacingYaw = yaw;
+            defaultPose = pose;
+            _initialized = false;
+            _move = null;
+            Initialize();
+        }
+
         private void Initialize()
         {
             if (_initialized || animationRoot == null) return;

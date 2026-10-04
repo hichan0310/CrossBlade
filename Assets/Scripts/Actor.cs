@@ -25,8 +25,10 @@ namespace Scripts
         private int carryIn = 0;
         private int carryOut = 0;
         public Move move;
+        public int queueRecoveryBonus;
         public int forceCarryOut => carryOut;
         public int forceCarryIn { set { carryIn = value; } }
+        public void SetForceCarryOut(int value) { carryOut = Mathf.Clamp(value, 0, 4); }
 
         public void Play(int inputForce, CombatContext combatContext, ActorType actorType)
         {
@@ -38,12 +40,14 @@ namespace Scripts
     {
         public Move move;
         public int force;
+        public int chaseForce;
         public float elapsed;
 
         public MoveRuntime(Move move, int force)
         {
             this.move = move;
             this.force = force;
+            chaseForce = 0;
             elapsed = 0f;
         }
 
@@ -89,6 +93,7 @@ namespace Scripts
         [SerializeField] private int hp = 100;
         [SerializeField] private int maxStance = 100;
         [SerializeField] private int stance = 100;
+        [SerializeField, Min(0)] private int baseStanceRecoveryPerMove = 10;
         [SerializeField] private int maxSpecialForce = 20;
         [SerializeField] private int specialForce;
         [SerializeField, Range(1, 5)] public int pendingForce = 1;
@@ -113,6 +118,21 @@ namespace Scripts
         [Header("Input")]
         [SerializeField] private PlanMaker planMaker;
         public PlanMaker PlanMaker => planMaker;
+        internal bool OnlineControlled { get; private set; }
+        internal void SetOnlinePlanner(PlanMaker planner)
+        {
+            OnlineControlled = true;
+            planMaker = planner;
+            DespawnPlanInputUI();
+        }
+        internal void ApplyOnlineState(int health, int posture, int special, Vector2 position, int facing)
+        {
+            hp = Mathf.Clamp(health, 0, maxHp);
+            stance = Mathf.Clamp(posture, 0, maxStance);
+            specialForce = Mathf.Clamp(special, 0, maxSpecialForce);
+            SetActorPosition(position);
+            SetFacing(facing);
+        }
         
         [SerializeField] private bool gettingForce = false;
         public bool GettingForce => gettingForce;
@@ -122,6 +142,8 @@ namespace Scripts
         [SerializeField] private Transform planUIRoot;
         [SerializeField] private bool gettingPlan = false;
         public bool GettingPlan => gettingPlan;
+        [SerializeField, Min(0.1f)] private float planDecisionSeconds = 3f;
+        private float planTimeRemaining;
 
         [SerializeField] private bool gettingPlanFinished = false;
         public bool GettingPlanFinished => gettingPlanFinished;
@@ -129,6 +151,10 @@ namespace Scripts
         [SerializeField] private Move plannedMove;
         internal Move PlannedMove => plannedMove;
         internal bool HasPlannedMove => plannedMove != null;
+        internal Move PlanningMove => actionController != null && actionController.PlanningSourceMove != null
+            ? actionController.PlanningSourceMove : IdleMove;
+        internal Move IdleMove => combatMoveGraph != null ? combatMoveGraph.ResolveIdleMove() :
+            (initialMove != null && initialMove.IsIdle ? initialMove : null);
 
         private GameObject _spawnedPlanInputUI;
         
@@ -140,6 +166,7 @@ namespace Scripts
             }
 
             gettingPlan = true;
+            planTimeRemaining = planDecisionSeconds;
             SpawnPlanInputUI();
         }
 
@@ -156,6 +183,15 @@ namespace Scripts
             plannedMove = null;
             gettingPlan = false;
             gettingPlanFinished = true;
+            DespawnPlanInputUI();
+        }
+
+        internal void CancelPlanning()
+        {
+            plannedMove = null;
+            gettingPlan = false;
+            gettingPlanFinished = false;
+            planTimeRemaining = 0f;
             DespawnPlanInputUI();
         }
 
@@ -203,19 +239,12 @@ namespace Scripts
         internal int PendingForce => pendingForce;
         internal bool CanIncreasePendingForce()
         {
-            return !IsMoveRunning && pendingForce < 5;
+            return false;
         }
 
         internal bool TryIncreasePendingForce()
         {
-            if (!CanIncreasePendingForce())
-            {
-                return false;
-            }
-
-            pendingForce++;
-            gettingForceTimer = planMaker is PlayerInputManager pim ? pim.inputDuration : 0.1f;
-            return true;
+            return false;
         }
 
         internal int ConsumePendingForce()
@@ -227,6 +256,13 @@ namespace Scripts
 
         public void ForceUpdate(float deltaTime)
         {
+            if (gettingPlan && !gettingPlanFinished)
+            {
+                if (QueueCount > 0) planTimeRemaining = planDecisionSeconds;
+                else planTimeRemaining = Mathf.Max(0f, planTimeRemaining - deltaTime);
+                // An empty queue holds the completed Move's pose until a real next Move is chosen.
+                // Do not silently inject Idle when the planning timer reaches zero.
+            }
             if (gettingForce)
             {
                 gettingForceTimer -= deltaTime;
@@ -240,8 +276,14 @@ namespace Scripts
         }
 
         [SerializeField] internal Vector2 _recoilVelocity;
-        private float _recoilFriction;
-        [SerializeField, Min(0f)] private float recoilStopEpsilon = 0.02f;
+        private Vector2 _recoilDirection;
+        private float _recoilDistance;
+        private float _recoilDuration;
+        private float _recoilElapsed;
+        [Header("Directional movement input")]
+        [SerializeField, Min(0f)] private float minimumInputSpeedChange = .4f;
+        [SerializeField, Min(0f)] private float maximumInputSpeedChange = 2f;
+        private int directionalInput;
         private float _nextAttackDamageMultiplier = 1f;
 
         private Move CurrentMoveInstance => visualController != null ? visualController.CurrentMoveInstance : null;
@@ -251,8 +293,12 @@ namespace Scripts
         internal bool HasResolvedExchange => actionController != null && actionController.HasResolvedExchange;
         internal MoveRuntime Current => actionController != null ? actionController.Current : default;
         internal int QueueCount => actionController != null ? actionController.QueueCount : 0;
+        internal int MaxQueuedMoves => actionController != null ? actionController.MaxQueuedMoves : 5;
+        internal int NextQueueRecoveryBonus => actionController != null ? actionController.NextQueueRecoveryBonus : 0;
+        internal bool HasQueueSpace => QueueCount < MaxQueuedMoves;
         internal bool IsGuardBroken => stance <= 0;
-        internal bool CanGuard => IsMoveRunning && !IsGuardBroken && CurrentMoveInstance != null && CurrentMoveInstance.Guardable;
+        internal bool CanGuard => IsMoveRunning && !IsGuardBroken && CurrentMoveInstance != null &&
+                                  CurrentMoveInstance.Category != MoveCategory.HitReaction && CurrentMoveInstance.Guardable;
         internal Vector2 Position => body != null ? body.position : (Vector2)transform.position;
         internal float ChainMultiplier => Mathf.Min(1f + ((actionController != null ? actionController.ChainCount : 0) * chainStepBonus), chainMaxMultiplier);
         internal int SpecialForce => specialForce;
@@ -265,6 +311,7 @@ namespace Scripts
         internal int MaxHp => maxHp;
         internal int Stance => stance;
         internal int MaxStance => maxStance;
+        internal int BaseStanceRecoveryPerMove => baseStanceRecoveryPerMove;
         internal int MaxSpecialForce => maxSpecialForce;
         internal bool IsInStartup => actionController != null && actionController.IsMoveRunning && actionController.StartupRemaining > 0f;
         internal float StartupRemaining => actionController != null ? actionController.StartupRemaining : 0f;
@@ -357,15 +404,16 @@ namespace Scripts
                 actionController.Initialize(this);
             }
 
-            if (initialMove != null)
+            var startingMove = combatMoveGraph != null ? combatMoveGraph.startMove : initialMove;
+            if (startingMove != null)
             {
-                Enqueue(initialMove);
+                Enqueue(startingMove);
             }
         }
 
-        internal void Enqueue(Move move)
+        internal bool Enqueue(Move move)
         {
-            actionController?.Enqueue(move);
+            return actionController != null && actionController.Enqueue(move);
         }
 
         internal void ClearQueuedMovesForInterrupt()
@@ -394,6 +442,12 @@ namespace Scripts
             actionController?.Interrupt(trigger, reason, combatContext);
         }
 
+        internal void InterruptWithFollowUps(MoveEventType trigger, InterruptReason reason,
+            CombatContext combatContext, int followUpCount)
+        {
+            actionController?.InterruptWithFollowUps(trigger, reason, combatContext, followUpCount);
+        }
+
         internal void ApplyHpDamage(int amount)
         {
             hp = Mathf.Max(0, hp - Mathf.Max(0, amount));
@@ -402,6 +456,13 @@ namespace Scripts
         internal void ApplyStanceDamage(int amount)
         {
             stance = Mathf.Max(0, stance - amount);
+        }
+
+        internal bool TrySpendStance(int amount)
+        {
+            if (amount < 0 || stance < amount) return false;
+            stance -= amount;
+            return true;
         }
 
         internal void RecoverStance(int amount)
@@ -445,12 +506,13 @@ namespace Scripts
             return value;
         }
 
-        internal void ResetAndApplyKnockback(Vector2 direction, float initialSpeed, float friction)
+        internal void ResetAndApplyKnockbackDistance(Vector2 direction, float distance, float duration)
         {
-            if (direction.sqrMagnitude <= 0f || initialSpeed <= 0f)
+            if (direction.sqrMagnitude <= 0f || distance <= 0f)
             {
                 _recoilVelocity = Vector2.zero;
-                _recoilFriction = Mathf.Max(0f, friction);
+                _recoilDistance = 0f;
+                _recoilElapsed = 0f;
                 return;
             }
 
@@ -459,13 +521,42 @@ namespace Scripts
                 body.linearVelocity = Vector2.zero;
             }
 
-            _recoilVelocity = direction.normalized * initialSpeed;
-            _recoilFriction = Mathf.Max(0f, friction);
+            _recoilDirection = direction.normalized;
+            _recoilDistance = distance;
+            _recoilDuration = Mathf.Max(.05f, duration);
+            _recoilElapsed = 0f;
+            _recoilVelocity = _recoilDirection * (2f * distance / _recoilDuration);
+        }
+
+        internal void SetDirectionalInput(int direction)
+        {
+            directionalInput = Mathf.Clamp(direction, -1, 1);
+        }
+
+        internal int DirectionalInput => directionalInput;
+
+        internal float AdjustHorizontalMovement(float distance, float deltaTime)
+        {
+            if (Mathf.Abs(distance) < 0.000001f || deltaTime <= 0f || directionalInput == 0)
+                return distance;
+            float baseSpeed = Mathf.Abs(distance) / deltaTime;
+            float minimum = Mathf.Max(0f, minimumInputSpeedChange);
+            float maximum = Mathf.Max(minimum, maximumInputSpeedChange);
+            float speedChange = Mathf.Clamp(baseSpeed * 0.2f, minimum, maximum);
+            bool sameDirection = Mathf.Sign(distance) == directionalInput;
+            // Opposing input can stop a very slow motion, but must not reverse it.
+            float adjustedSpeed = sameDirection ? baseSpeed + speedChange : Mathf.Max(0f, baseSpeed - speedChange);
+            return Mathf.Sign(distance) * adjustedSpeed * deltaTime;
         }
 
         internal void MoveBy(Vector2 delta)
         {
-            SetActorPosition(Position + delta);
+            // Contact is resolved by the combat sweep, before either fighter is ticked.
+            // Commit now so the second fighter and this frame's exchange see the result.
+            var position = Position + delta;
+            if (body != null) body.position = position;
+            transform.position = new Vector3(position.x, position.y, transform.position.z);
+            Physics2D.SyncTransforms();
         }
 
         internal void MarkCurrentMoveExchanged()
@@ -480,28 +571,28 @@ namespace Scripts
 
         private void SetActorPosition(Vector2 position)
         {
-            if (body != null)
-            {
-                body.MovePosition(position);
-                return;
-            }
-
-            transform.position = position;
+            if (body != null) body.position = position;
+            transform.position = new Vector3(position.x, position.y, transform.position.z);
+            Physics2D.SyncTransforms();
         }
 
-        private void ApplyRecoil(float deltaTime)
+        private Vector2 ApplyRecoil(float deltaTime, bool applyPosition)
         {
             if (_recoilVelocity.sqrMagnitude <= 0f || deltaTime <= 0f)
             {
-                return;
+                return Vector2.zero;
             }
 
-            Vector2 delta = _recoilVelocity * deltaTime;
-            SetActorPosition(Position + delta);
+            float previous = Mathf.Clamp01(_recoilElapsed / _recoilDuration);
+            _recoilElapsed = Mathf.Min(_recoilDuration, _recoilElapsed + deltaTime);
+            float current = Mathf.Clamp01(_recoilElapsed / _recoilDuration);
+            float step = _recoilDistance * ((1f - previous) * (1f - previous) -
+                                            (1f - current) * (1f - current));
+            Vector2 delta = _recoilDirection * step;
+            delta.x = AdjustHorizontalMovement(delta.x, deltaTime);
+            if (applyPosition) SetActorPosition(Position + delta);
 
-            var coef=Mathf.Max(1f, _recoilVelocity.magnitude);
-            float speed = Mathf.MoveTowards(_recoilVelocity.magnitude, 0f, coef*_recoilFriction * deltaTime);
-            if (speed <= recoilStopEpsilon)
+            if (_recoilElapsed >= _recoilDuration)
             {
                 _recoilVelocity = Vector2.zero;
 
@@ -510,15 +601,16 @@ namespace Scripts
                     body.linearVelocity = Vector2.zero;
                 }
 
-                return;
+                return delta;
             }
 
-            _recoilVelocity = _recoilVelocity.normalized * speed;
+            _recoilVelocity = _recoilDirection * (2f * _recoilDistance * (1f - current) / _recoilDuration);
+            return delta;
         }
 
-        internal void ApplyRecoilFromActionController(float deltaTime)
+        internal Vector2 ApplyRecoilFromActionController(float deltaTime, bool applyPosition = true)
         {
-            ApplyRecoil(deltaTime);
+            return ApplyRecoil(deltaTime, applyPosition);
         }
 
         internal Move CreateMoveInstanceFromAction(Move template)

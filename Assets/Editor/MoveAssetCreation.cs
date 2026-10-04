@@ -32,6 +32,8 @@ internal static class MoveAssetCreation
             var move = instance.AddComponent<Move>();
             var serialized = new SerializedObject(move);
             serialized.FindProperty("moveId").stringValue = instance.name;
+            serialized.FindProperty("stanceUsageBase").floatValue = 13f;
+            serialized.FindProperty("stanceUsagePerPower").floatValue = 5f;
             if (clip != null)
             {
                 serialized.FindProperty("characterAnimation").objectReferenceValue = clip;

@@ -14,6 +14,7 @@ public sealed class CombatMoveGraphNode
 public sealed class CombatMoveGraphAsset : ScriptableObject
 {
     public Move startMove;
+    [HideInInspector] public string networkContentHash;
     [HideInInspector] public MoveReactionDefaults reactionDefaults;
     public Move defaultGuardMove;
     public Move defaultHitMove;
@@ -35,6 +36,12 @@ public sealed class CombatMoveGraphAsset : ScriptableObject
         if (direct != null) return direct;
         var common = guard ? defaultGuardMove : defaultHitMove;
         return common != null && nodes.Exists(n => n.move == common) ? common : null;
+    }
+    public Move ResolveIdleMove()
+    {
+        foreach (var node in nodes)
+            if (node.move != null && node.move.IsIdle) return node.move;
+        return null;
     }
     public List<CombatMoveGraphNode> nodes = new();
     public Vector2 pan = new(30, 30);

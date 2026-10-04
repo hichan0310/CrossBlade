@@ -9,16 +9,16 @@ namespace Scripts.CharAIs
 
         public override PlanQueryState GetPlan(Actor actor)
         {
-            if (actor == null || actor.Current.move == null)
+            if (actor == null || actor.PlanningMove == null)
             {
                 return PlanQueryState.Failed;
             }
 
-            var after = actor.Current.move.After;
+            var after = actor.PlanningMove.After;
             if (after == null || after.Count == 0)
             {
-                actor.FailPlannedMove();
-                return PlanQueryState.Failed;
+                if (actor.IdleMove != null) { actor.SubmitPlannedMove(actor.IdleMove); return PlanQueryState.Ready; }
+                actor.FailPlannedMove(); return PlanQueryState.Failed;
             }
 
             if (actor.HasPlannedMove)
@@ -42,25 +42,7 @@ namespace Scripts.CharAIs
 
         public override PlanQueryState GetForce(Actor actor)
         {
-            if (actor == null)
-            {
-                return PlanQueryState.Failed;
-            }
-
-            if (actor.ActionController.nextMove == null || !actor.ActionController.nextMove.UsesForce)
-            {
-                return PlanQueryState.Ready;
-            }
-
-            if (!actor.GettingForce && !actor.GettingForceFinished)
-            {
-                actor.StartGettingForce();
-                return PlanQueryState.Running;
-            }
-
-            return (!actor.GettingForce && actor.GettingForceFinished)
-                ? PlanQueryState.Ready
-                : PlanQueryState.Running;
+            return actor == null ? PlanQueryState.Failed : PlanQueryState.Ready;
         }
     }
 }
